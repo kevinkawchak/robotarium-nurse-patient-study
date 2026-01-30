@@ -1,0 +1,1 @@
+[INFO] [1769780495.473585605] [robotarium]: Starting Experiment
