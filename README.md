@@ -2,6 +2,10 @@
 
 Remote swarm robotics experiments conducted on Georgia Tech's Robotarium platform using GRITSBot robots.
 
+<picture>
+  <img src="assets/robotarium-nurse-patient-study.jpg" alt="Main">
+</picture>
+
 ## Overview
 
 This repository contains Python scripts and documentation for experiments run on the [Georgia Tech Robotarium](https://www.robotarium.gatech.edu/) - a remotely accessible, $2.5 million swarm robotics research platform funded by the National Science Foundation (NSF) and Office of Naval Research.
