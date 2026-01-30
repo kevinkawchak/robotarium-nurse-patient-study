@@ -139,3 +139,6 @@ This project is for educational and research purposes. See individual experiment
 
 - **GitHub Repository:** [kevinkawchak](https://github.com/kevinkawchak)
 - **Robotarium Support:** https://www.robotarium.gatech.edu/
+
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18435965-blue)](https://doi.org/10.5281/zenodo.18435965)
+
