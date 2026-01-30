@@ -1,4 +1,4 @@
-# Robotarium Clinical Trial Experiments
+# Robotarium Nurse Patient Experiment
 
 Remote swarm robotics experiments conducted on Georgia Tech's Robotarium platform using GRITSBot robots.
 
