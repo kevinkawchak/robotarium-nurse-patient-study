@@ -1,12 +1,11 @@
 # Robotarium Nurse Patient Experiment
 
-Remote swarm robotics experiments conducted on Georgia Tech's Robotarium platform using GRITSBot robots.
+Remote robotics experiments conducted on Georgia Tech's Robotarium platform using GRITSBots. (Nurse patient study shown below)
 
 <picture>
   <img src="assets/robotarium-nurse-patient-study.jpg" alt="Main">
 </picture>
-
-## Overview
+Overview
 
 This repository contains Python scripts and documentation for experiments run on the [Georgia Tech Robotarium](https://www.robotarium.gatech.edu/) - a remotely accessible, $2.5 million swarm robotics research platform funded by the National Science Foundation (NSF) and Office of Naval Research.
 
@@ -18,13 +17,7 @@ This repository contains Python scripts and documentation for experiments run on
 - **Description:** Original trial simulating clinical trial interactions between nurse and patient robots
 - **Status:** ✅ Completed (January 30, 2026)
 
-📹 **Video:** [Watch Experiment on Google Drive](YOUR_GOOGLE_DRIVE_LINK_HERE)
-
-### Demo - GT Circle Formation
-- **Description:** Robotarium demonstration showing robots forming the Georgia Tech logo pattern
-- **Source:** [Robotarium Demo Page](https://www.robotarium.gatech.edu/demo)
-
-📹 **Video:** [Watch Demo on Google Drive](YOUR_GOOGLE_DRIVE_LINK_HERE)
+📹 **Video:** [Watch Experiment on Google Drive](https://drive.google.com/drive/folders/17Q9Va8vZhKIaC9hvBp60CX3MiqVKjEXY?usp=sharing)
 
 ## Hardware Platform
 
@@ -76,12 +69,10 @@ The Robotarium is a 725-square-foot facility housing nearly 100 rolling and flyi
 - **Python Simulator:** https://github.com/robotarium/robotarium_python_simulator
 - **MATLAB Simulator:** https://github.com/robotarium/robotarium-matlab-simulator
 
-## Repository Structure
 ## Running Experiments
 
 ### Prerequisites
-- Python 3.5+
-- NumPy, matplotlib, CVXOPT
+- Python, NumPy, matplotlib, CVXOPT
 - Robotarium Python Simulator (for local testing)
 
 ### Local Simulation
@@ -123,5 +114,5 @@ This project is for educational and research purposes. See individual experiment
 
 ## Contact
 
-- **GitHub:** [kevinkawchak](https://github.com/kevinkawchak)
+- **GitHub Repository:** [kevinkawchak](https://github.com/kevinkawchak)
 - **Robotarium Support:** https://www.robotarium.gatech.edu/
