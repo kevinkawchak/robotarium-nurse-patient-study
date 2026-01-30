@@ -37,9 +37,9 @@ e) Subtle, responsive movements when nurse is close
 f) Includes sinusoidal variations for realistic human-like motion
 
 Actual Robot Behavior (Similar to Expected):
-- Robot 0 (Nurse, TOP): 
+- Robot 0 (Nurse, Starts at Top): 
 a) Demonstrates careful navigation, approaches the patient (0:50), pauses for interaction (1:06-1:09), then returns away from patient (1:15).
-- Robot 1 (Patient, BOTTOM): 
+- Robot 1 (Patient, Starts at Bottom): 
 a) Exhibits dynamic behavior with varied movements (0:28-1:03), (1:10-1:26) that become less pronounced when closer in proximity to nurse.
 
 ## Hardware Platform
