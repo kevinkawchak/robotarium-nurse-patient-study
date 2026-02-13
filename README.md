@@ -2,6 +2,10 @@
 
 Remote robotics experiments conducted on Georgia Tech's Robotarium platform using GRITSBots. (Nurse patient study shown below)
 
+📹 **New Video 13Feb26:** [14 Robot Doctor/Patient Swarm Interactions](https://drive.google.com/file/d/1M97IHiHEKnU3FW8gpx3g1sJBNsatAUEp/view?usp=drivesdk)
+
+---
+
 <picture>
   <img src="assets/robotarium-nurse-patient-study.jpg" alt="Main">
 </picture>
