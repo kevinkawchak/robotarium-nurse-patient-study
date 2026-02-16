@@ -38,3 +38,5 @@ Future steps may include obtaining and running humanoids that others can access 
 References:
 1) “Robotarium.” Gatech.edu, 2025, www.robotarium.gatech.edu/.
 2) kevinkawchak, GitHub, 2026, https://lnkd.in/gjmbHXch.
+
+- Post by Kevin Kawchak
