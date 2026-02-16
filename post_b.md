@@ -20,3 +20,5 @@ c) Be sure to ask the LLM to provide step by step bullet points regarding what t
 d) Submit to Robotarium, requesting 3x runtime that was provided as an estimate to Opus (the robots take time to reach desired positions). https://lnkd.in/gT_783SY
 
 I am hoping to run larger robots and experiments with enhanced oncology trial context by #NVIDIAGTC, Carter Abdallah
+
+- Post by Kevin Kawchak
