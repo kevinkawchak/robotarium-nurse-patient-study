@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robotarium Web Simulator</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; margin: 1rem; background: #0b1020; color: #eef2ff; }
+    button, input { font-size: 1rem; margin: .25rem 0; }
+    #canvas { width: 100%; max-width: 900px; aspect-ratio: 16/10; border: 1px solid #5b6b9a; background: #fff; }
+    .row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; }
+    #status { white-space: pre-wrap; font-size: .9rem; color: #b3c7ff; }
+  </style>
+</head>
+<body>
+<h1>Robotarium Python Simulator (Web)</h1>
+<p>Step 1: keep default <code>Exp_01a_12Feb26.py</code> or upload your own <code>.py</code>. Step 2: press Play.</p>
+<div class="row">
+  <input id="fileInput" type="file" accept=".py" />
+  <button id="playBtn">Play simulator</button>
+</div>
+<canvas id="canvas" width="900" height="560"></canvas>
+<pre id="status">Loading...</pre>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+const status = document.getElementById('status');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let pyodide;
+let uploadedScript = null;
+
+function arenaToPx(x, y){
+  const nx = (x + 1.6) / 3.2;
+  const ny = 1 - ((y + 1.0) / 2.0);
+  return [nx * canvas.width, ny * canvas.height];
+}
+
+function drawFrame(poses){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = '#f7fafc';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  poses.forEach((p, i) => {
+    const [px, py] = arenaToPx(p[0], p[1]);
+    const isDoctor = i < 5;
+    ctx.beginPath();
+    ctx.arc(px, py, 8, 0, Math.PI * 2);
+    ctx.fillStyle = isDoctor ? '#1d4ed8' : '#dc2626';
+    ctx.fill();
+  });
+}
+
+async function init(){
+  pyodide = await loadPyodide();
+  await pyodide.loadPackage('numpy');
+  uploadedScript = await fetch('../Exp_01a_12Feb26.py').then(r => r.text()).catch(() => '');
+  status.textContent = 'Ready.';
+}
+
+const bootstrap = `
+import sys, types, numpy as np
+FRAME_LOG = []
+
+class Robotarium:
+    def __init__(self, number_of_robots, show_figure=False, initial_conditions=None, sim_in_real_time=False, time_step=0.033):
+        self.number_of_robots = int(number_of_robots)
+        self.poses = np.array(initial_conditions, dtype=float) if initial_conditions is not None else np.zeros((3, self.number_of_robots))
+        self._dxu = np.zeros((2, self.number_of_robots))
+        FRAME_LOG.append(self.poses.copy())
+        self.time_step = float(time_step)
+    def get_poses(self): return self.poses.copy()
+    def set_velocities(self, ids, dxu): self._dxu[:, np.asarray(ids, dtype=int)] = dxu
+    def step(self):
+        t = self.poses[2,:]
+        self.poses[0,:] += self.time_step*self._dxu[0,:]*np.cos(t)
+        self.poses[1,:] += self.time_step*self._dxu[0,:]*np.sin(t)
+        self.poses[2,:] += self.time_step*self._dxu[1,:]
+        self.poses[0,:] = np.clip(self.poses[0,:], -1.6, 1.6)
+        self.poses[1,:] = np.clip(self.poses[1,:], -1.0, 1.0)
+        FRAME_LOG.append(self.poses.copy())
+    def call_at_scripts_end(self): pass
+
+def create_si_position_controller(x_velocity_gain=1.0, y_velocity_gain=1.0, velocity_magnitude_limit=0.12):
+    def c(current, target):
+        e = target-current
+        d = np.vstack((x_velocity_gain*e[0,:], y_velocity_gain*e[1,:]))
+        m = np.linalg.norm(d, axis=0)
+        over = m > velocity_magnitude_limit
+        if np.any(over): d[:, over] *= velocity_magnitude_limit/m[over]
+        return d
+    return c
+
+def create_single_integrator_barrier_certificate_with_boundary(safety_radius=0.17):
+    def b(dxi, x):
+        out = np.array(dxi, copy=True)
+        n = x.shape[1]
+        for i in range(n):
+            for j in range(i+1, n):
+                diff = x[:2, i]-x[:2, j]
+                d = np.linalg.norm(diff)
+                if d < safety_radius and d > 1e-6:
+                    push = (safety_radius-d)*(diff/d)
+                    out[:,i] += 0.3*push; out[:,j] -= 0.3*push
+        return out
+    return b
+
+def create_si_to_uni_dynamics(linear_velocity_gain=1, angular_velocity_limit=np.pi):
+    def f(dxi, x):
+        th = x[2,:]
+        des = np.arctan2(dxi[1,:], dxi[0,:])
+        err = (des-th+np.pi)%(2*np.pi)-np.pi
+        return np.vstack((np.linalg.norm(dxi, axis=0)*linear_velocity_gain, np.clip(2*err, -angular_velocity_limit, angular_velocity_limit)))
+    return f
+
+rps = types.ModuleType('rps')
+robotarium_mod = types.ModuleType('rps.robotarium'); robotarium_mod.Robotarium = Robotarium
+util = types.ModuleType('rps.utilities')
+ctrl = types.ModuleType('rps.utilities.controllers'); ctrl.create_si_position_controller = create_si_position_controller
+bc = types.ModuleType('rps.utilities.barrier_certificates'); bc.create_single_integrator_barrier_certificate_with_boundary = create_single_integrator_barrier_certificate_with_boundary
+tr = types.ModuleType('rps.utilities.transformations'); tr.create_si_to_uni_dynamics = create_si_to_uni_dynamics
+misc = types.ModuleType('rps.utilities.misc')
+sys.modules['rps']=rps
+sys.modules['rps.robotarium']=robotarium_mod
+sys.modules['rps.utilities']=util
+sys.modules['rps.utilities.controllers']=ctrl
+sys.modules['rps.utilities.barrier_certificates']=bc
+sys.modules['rps.utilities.transformations']=tr
+sys.modules['rps.utilities.misc']=misc
+`;
+
+async function runSimulation() {
+  status.textContent = 'Running python simulation...';
+  const script = uploadedScript || '';
+  try {
+    await pyodide.runPythonAsync(bootstrap + '\n' + script);
+    const framesObj = pyodide.runPython('[[[float(v) for v in row] for row in frame[:2].T] for frame in FRAME_LOG]');
+    const frames = framesObj.toJs({create_proxies:false});
+    status.textContent = `Completed. Frames: ${frames.length}`;
+    let i=0;
+    const timer = setInterval(() => {
+      drawFrame(frames[i]);
+      i += 2;
+      if(i >= frames.length){ clearInterval(timer); }
+    }, 33);
+  } catch (err) {
+    status.textContent = 'Error: ' + err;
+  }
+}
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  if(!file) return;
+  file.text().then(t => { uploadedScript = t; status.textContent = `Loaded: ${file.name}`; });
+});
+document.getElementById('playBtn').addEventListener('click', runSimulation);
+init();
+</script>
+</body>
+</html>

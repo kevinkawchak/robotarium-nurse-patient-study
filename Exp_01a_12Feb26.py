@@ -46,29 +46,28 @@
 ================================================================================
 """
 
-import rps.robotarium as robotarium
-from rps.utilities.transformations import *
-from rps.utilities.barrier_certificates import *
-from rps.utilities.misc import *
-from rps.utilities.controllers import *
-
 import numpy as np
+
+import rps.robotarium as robotarium
+from rps.utilities import barrier_certificates as bc
+from rps.utilities import controllers as ctl
+from rps.utilities import transformations as tr
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
-N = 14                       # Total robots
-NUM_DOCTORS = 5              # Robots 0..4
-NUM_PATIENTS = 9             # Robots 5..13
+N = 14  # Total robots
+NUM_DOCTORS = 5  # Robots 0..4
+NUM_PATIENTS = 9  # Robots 5..13
 DOCTOR_IDS = list(range(NUM_DOCTORS))
 PATIENT_IDS = list(range(NUM_DOCTORS, N))
 
 # Timing (~30 Hz → 0.033s per iteration)
-TOTAL_ITERATIONS = 1800      # ~60 seconds
-PHASE_1_END = 240            # 0-8s
-PHASE_2_END = 600            # 8-20s
-PHASE_3_END = 1140           # 20-38s
-PHASE_4_END = 1500           # 38-50s
+TOTAL_ITERATIONS = 1800  # ~60 seconds
+PHASE_1_END = 240  # 0-8s
+PHASE_2_END = 600  # 8-20s
+PHASE_3_END = 1140  # 20-38s
+PHASE_4_END = 1500  # 38-50s
 # Phase 5: 1500-1800         # 50-60s
 
 # Arena bounds (Robotarium: [-1.6, 1.6] x [-1.0, 1.0])
@@ -86,16 +85,14 @@ FLOCK_STOP_DIST = 0.30
 # All pairwise distances >= 0.43 (verified safe; minimum required ~0.3)
 # ─────────────────────────────────────────────────────────────────────────────
 doctor_x = np.array([-1.30, -1.30, -0.95, -0.95, -0.95])
-doctor_y = np.array([ 0.30, -0.30,  0.00,  0.55, -0.55])
+doctor_y = np.array([0.30, -0.30, 0.00, 0.55, -0.55])
 
-patient_x = np.array([ 0.00,  0.50,  1.10,  0.00,  0.50,  1.10, -0.20,  0.50,  1.10])
-patient_y = np.array([ 0.60,  0.60,  0.60,  0.00,  0.00,  0.00, -0.60, -0.60, -0.60])
+patient_x = np.array([0.00, 0.50, 1.10, 0.00, 0.50, 1.10, -0.20, 0.50, 1.10])
+patient_y = np.array([0.60, 0.60, 0.60, 0.00, 0.00, 0.00, -0.60, -0.60, -0.60])
 
-initial_conditions = np.array([
-    np.concatenate([doctor_x, patient_x]),
-    np.concatenate([doctor_y, patient_y]),
-    np.zeros(N)
-])
+initial_conditions = np.array(
+    [np.concatenate([doctor_x, patient_x]), np.concatenate([doctor_y, patient_y]), np.zeros(N)]
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ROBOTARIUM INIT
@@ -104,17 +101,15 @@ r = robotarium.Robotarium(
     number_of_robots=N,
     show_figure=True,
     initial_conditions=initial_conditions,
-    sim_in_real_time=True
+    sim_in_real_time=True,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONTROLLERS & SAFETY (using verified Robotarium API function names)
 # ─────────────────────────────────────────────────────────────────────────────
-si_barrier_cert = create_single_integrator_barrier_certificate_with_boundary()
-si_to_uni_dyn = create_si_to_uni_dynamics(
-    linear_velocity_gain=1, angular_velocity_limit=np.pi
-)
-si_position_controller = create_si_position_controller(
+si_barrier_cert = bc.create_single_integrator_barrier_certificate_with_boundary()
+si_to_uni_dyn = tr.create_si_to_uni_dynamics(linear_velocity_gain=1, angular_velocity_limit=np.pi)
+si_position_controller = ctl.create_si_position_controller(
     x_velocity_gain=1, y_velocity_gain=1, velocity_magnitude_limit=0.12
 )
 
@@ -128,6 +123,7 @@ si_position_controller = create_si_position_controller(
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPER FUNCTIONS (numpy-only — no scipy dependency)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def clamp_to_arena(pos, margin=0.15):
     """Clamp a 2D position to stay within the arena boundaries."""
@@ -158,7 +154,7 @@ def greedy_assignment(doc_pos, pat_pos):
     n_pat = pat_pos.shape[1]
 
     # Pairwise distance matrix via numpy broadcasting
-    dx = doc_pos[0, :, None] - pat_pos[0, None, :]   # n_doc × n_pat
+    dx = doc_pos[0, :, None] - pat_pos[0, None, :]  # n_doc × n_pat
     dy = doc_pos[1, :, None] - pat_pos[1, None, :]
     dist = np.sqrt(dx**2 + dy**2)
 
@@ -208,30 +204,24 @@ claimed = set()
 # MAIN LOOP
 # ─────────────────────────────────────────────────────────────────────────────
 for t in range(TOTAL_ITERATIONS):
-
     # Current poses: 3×N [x; y; theta]
     x = r.get_poses()
-    xi = x[:2, :]                       # 2D positions (2×N)
-    dxi = np.zeros((2, N))              # SI velocity commands (2×N)
+    xi = x[:2, :]  # 2D positions (2×N)
+    dxi = np.zeros((2, N))  # SI velocity commands (2×N)
 
     # =================================================================
     # PHASE 1: DISTRESS SIGNAL (0–8 sec)
     # =================================================================
     if t < PHASE_1_END:
-
         # Doctors hold at hospital base
-        dxi[:, :NUM_DOCTORS] = si_position_controller(
-            xi[:, :NUM_DOCTORS], doctor_home
-        )
+        dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doctor_home)
 
         # Patients oscillate (distress)
         offsets = distress_offsets(t, NUM_PATIENTS)
         targets = patient_home + offsets
         for i in range(NUM_PATIENTS):
             targets[:, i] = clamp_to_arena(targets[:, i])
-        dxi[:, NUM_DOCTORS:] = si_position_controller(
-            xi[:, NUM_DOCTORS:], targets
-        )
+        dxi[:, NUM_DOCTORS:] = si_position_controller(xi[:, NUM_DOCTORS:], targets)
 
     # =================================================================
     # PHASE 2: DISPATCH & TRIAGE SWEEP (8–20 sec)
@@ -249,26 +239,22 @@ for t in range(TOTAL_ITERATIONS):
                         continue
                     diff = xi[:, i] - xi[:, j]
                     d = max(np.linalg.norm(diff), 0.01)
-                    repulsion += diff / (d ** 2)
+                    repulsion += diff / (d**2)
                 rn = np.linalg.norm(repulsion)
                 if rn > 0:
                     repulsion = repulsion / rn * 0.3
                 doc_targets[:, i] = clamp_to_arena(xi[:, i] + repulsion)
 
-            dxi[:, :NUM_DOCTORS] = si_position_controller(
-                xi[:, :NUM_DOCTORS], doc_targets
-            )
+            dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doc_targets)
         else:
             # Compute & cache assignment
-            assignment, claimed = greedy_assignment(
-                xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
-            )
+            assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
 
             # Doctors move toward assigned patient
             for d_idx, p_idx in assignment.items():
                 g_pat = NUM_DOCTORS + p_idx
                 target = xi[:, g_pat].reshape(2, 1)
-                dxi[:, d_idx:d_idx+1] = si_position_controller(
+                dxi[:, d_idx : d_idx + 1] = si_position_controller(
                     xi[:, d_idx].reshape(2, 1), target
                 )
 
@@ -278,19 +264,14 @@ for t in range(TOTAL_ITERATIONS):
         targets = patient_home + offsets
         for i in range(NUM_PATIENTS):
             targets[:, i] = clamp_to_arena(targets[:, i])
-        dxi[:, NUM_DOCTORS:] = si_position_controller(
-            xi[:, NUM_DOCTORS:], targets
-        )
+        dxi[:, NUM_DOCTORS:] = si_position_controller(xi[:, NUM_DOCTORS:], targets)
 
     # =================================================================
     # PHASE 3: TREATMENT & STABILIZATION (20–38 sec)
     # =================================================================
     elif t < PHASE_3_END:
-
         # Refresh assignment
-        assignment, claimed = greedy_assignment(
-            xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
-        )
+        assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
 
         # --- Doctors: orbit assigned patient ---
         orbit_speed = 0.04
@@ -300,7 +281,7 @@ for t in range(TOTAL_ITERATIONS):
             angle = orbit_speed * t + d_idx * (2 * np.pi / NUM_DOCTORS)
             orb = center + ORBIT_RADIUS * np.array([np.cos(angle), np.sin(angle)])
             orb = clamp_to_arena(orb)
-            dxi[:, d_idx:d_idx+1] = si_position_controller(
+            dxi[:, d_idx : d_idx + 1] = si_position_controller(
                 xi[:, d_idx].reshape(2, 1), orb.reshape(2, 1)
             )
 
@@ -327,10 +308,8 @@ for t in range(TOTAL_ITERATIONS):
                 target = centers[:, nearest]
 
                 if dists[nearest] > FLOCK_STOP_DIST:
-                    vel = si_position_controller(
-                        pos.reshape(2, 1), target.reshape(2, 1)
-                    )
-                    dxi[:, g_pat:g_pat+1] = vel * 0.5
+                    vel = si_position_controller(pos.reshape(2, 1), target.reshape(2, 1))
+                    dxi[:, g_pat : g_pat + 1] = vel * 0.5
                 else:
                     dxi[:, g_pat] = np.zeros(2)
 
@@ -342,9 +321,7 @@ for t in range(TOTAL_ITERATIONS):
         center = np.array([0.0, 0.0])
 
         # Refresh assignment
-        assignment, claimed = greedy_assignment(
-            xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
-        )
+        assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
 
         # Doctors: lead toward center
         for d_idx, p_idx in assignment.items():
@@ -360,14 +337,14 @@ for t in range(TOTAL_ITERATIONS):
                 doc_target = doc_target + 0.12 * (direction / dn)
 
             doc_target = clamp_to_arena(doc_target)
-            dxi[:, d_idx:d_idx+1] = si_position_controller(
+            dxi[:, d_idx : d_idx + 1] = si_position_controller(
                 xi[:, d_idx].reshape(2, 1), doc_target.reshape(2, 1)
             )
 
         # Unassigned doctors also move to center
         for d_idx in range(NUM_DOCTORS):
             if d_idx not in assignment:
-                dxi[:, d_idx:d_idx+1] = si_position_controller(
+                dxi[:, d_idx : d_idx + 1] = si_position_controller(
                     xi[:, d_idx].reshape(2, 1), center.reshape(2, 1)
                 )
 
@@ -378,7 +355,7 @@ for t in range(TOTAL_ITERATIONS):
             blend = 0.2 + 0.6 * progress
             target = (1 - blend) * pos + blend * center
             target = clamp_to_arena(target)
-            dxi[:, g_pat:g_pat+1] = si_position_controller(
+            dxi[:, g_pat : g_pat + 1] = si_position_controller(
                 pos.reshape(2, 1), target.reshape(2, 1)
             )
 
@@ -387,7 +364,7 @@ for t in range(TOTAL_ITERATIONS):
     # =================================================================
     else:
         for i in range(N):
-            dxi[:, i:i+1] = si_position_controller(
+            dxi[:, i : i + 1] = si_position_controller(
                 xi[:, i].reshape(2, 1), final_ring[:, i].reshape(2, 1)
             )
 

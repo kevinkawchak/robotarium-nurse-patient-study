@@ -13,6 +13,48 @@ Overview
 
 This repository contains Python scripts and documentation for experiments run on the [Georgia Tech Robotarium](https://www.robotarium.gatech.edu/) - a remotely accessible, $2.5 million swarm robotics research platform funded by the National Science Foundation (NSF) and Office of Naval Research.
 
+
+## v0.2.0 Web + Local Simulator Upgrade
+
+This repository now includes a built-in Robotarium-compatible simulator that can be run:
+- **In browser (GitHub Pages, iOS-friendly):** upload/select a `.py` file and press **Play simulator**
+- **Locally in Python:** run existing experiment files directly (for pre-flight checks before Robotarium submission)
+
+### Simulator Architecture (text diagram)
+
+```text
++----------------------------+      +------------------------------------+
+| User .py experiment script | ---> | Robotarium Compatibility Layer     |
+| (default: Exp_01a_12Feb26) |      | - rps.robotarium.Robotarium        |
++----------------------------+      | - controllers / barriers / dynamics|
+                                     +-------------------+----------------+
+                                                         |
+                                                         v
+                                     +------------------------------------+
+                                     | Physics + Safety Core              |
+                                     | - unicycle integration             |
+                                     | - arena boundary clamp             |
+                                     | - collision avoidance certificates |
+                                     +-------------------+----------------+
+                                                         |
+                        +--------------------------------+-----------------+
+                        |                                                  |
+                        v                                                  v
+            +----------------------------+                    +----------------------------+
+            | Local Python execution     |                    | GitHub Pages Web Runtime   |
+            | `python Exp_01a_12Feb26.py`|                    | Pyodide + Canvas + Upload  |
+            +----------------------------+                    +----------------------------+
+```
+
+### Quick Start (no terminal on iOS)
+1. Open GitHub Pages for this repo (serving `docs/index.html`).
+2. Keep default script or upload/drag a `.py` Robotarium script, then press **Play simulator**.
+
+### Quick Start (local pre-flight check)
+```bash
+python Exp_01a_12Feb26.py
+```
+
 ## Experiments
 
 ### Trial_01_29Jan26 - Clinical Trial Nurse-Patient Simulation
