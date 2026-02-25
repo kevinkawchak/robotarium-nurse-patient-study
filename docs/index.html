@@ -2,156 +2,760 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Robotarium Web Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Robotarium Web Simulator v3</title>
   <style>
-    body { font-family: -apple-system, sans-serif; margin: 1rem; background: #0b1020; color: #eef2ff; }
-    button, input { font-size: 1rem; margin: .25rem 0; }
-    #canvas { width: 100%; max-width: 900px; aspect-ratio: 16/10; border: 1px solid #5b6b9a; background: #fff; }
-    .row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; }
-    #status { white-space: pre-wrap; font-size: .9rem; color: #b3c7ff; }
+    :root {
+      --bg: #0a0e1a;
+      --surface: #131829;
+      --border: #2a3352;
+      --accent: #4f8cff;
+      --accent-dim: #2a4a8a;
+      --text: #e4e8f7;
+      --text-dim: #8892b0;
+      --doctor: #3b82f6;
+      --patient: #ef4444;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --arena-bg: #f8fafc;
+      --arena-grid: #e2e8f0;
+      --arena-border: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 0.75rem;
+      -webkit-user-select: none; user-select: none;
+    }
+    h1 {
+      font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.75rem; }
+
+    /* ── Controls ─────────────────────────────────────────────── */
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+      align-items: center; margin-bottom: 0.5rem;
+    }
+    .controls button, .controls label.btn {
+      font-size: 0.85rem; padding: 0.4rem 0.85rem;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--surface); color: var(--text);
+      cursor: pointer; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 0.3rem;
+    }
+    .controls button:hover, .controls label.btn:hover { border-color: var(--accent); }
+    .controls button:active { transform: scale(0.97); }
+    .controls button.primary {
+      background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600;
+    }
+    .controls button.primary:hover { background: #3b7aef; }
+    .controls button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .controls input[type="file"] { display: none; }
+    .speed-group { display: flex; gap: 0; }
+    .speed-group button {
+      border-radius: 0; border-right-width: 0;
+      font-size: 0.75rem; padding: 0.35rem 0.55rem;
+      min-width: 2.2rem;
+    }
+    .speed-group button:first-child { border-radius: 6px 0 0 6px; }
+    .speed-group button:last-child { border-radius: 0 6px 6px 0; border-right-width: 1px; }
+    .speed-group button.active { background: var(--accent-dim); border-color: var(--accent); color: #fff; }
+
+    /* ── Canvas wrapper ──────────────────────────────────────── */
+    .canvas-wrap {
+      position: relative; width: 100%; max-width: 960px;
+      border: 2px solid var(--border); border-radius: 8px;
+      overflow: hidden; background: var(--arena-bg);
+    }
+    canvas { display: block; width: 100%; height: auto; }
+
+    /* ── Phase timeline ──────────────────────────────────────── */
+    .timeline {
+      display: flex; width: 100%; max-width: 960px;
+      margin-top: 0.35rem; border-radius: 4px; overflow: hidden;
+      font-size: 0.65rem; font-weight: 600; height: 20px;
+    }
+    .timeline .phase {
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; opacity: 0.45; transition: opacity 0.2s;
+      white-space: nowrap; overflow: hidden;
+    }
+    .timeline .phase.active { opacity: 1; }
+    .phase-1 { background: #6366f1; flex: 240; }
+    .phase-2 { background: #f59e0b; flex: 360; }
+    .phase-3 { background: #22c55e; flex: 540; }
+    .phase-4 { background: #ef4444; flex: 360; }
+    .phase-5 { background: #8b5cf6; flex: 300; }
+
+    /* ── Info bar ─────────────────────────────────────────────── */
+    .info-bar {
+      display: flex; flex-wrap: wrap; gap: 0.75rem;
+      max-width: 960px; margin-top: 0.4rem;
+      font-size: 0.78rem; color: var(--text-dim);
+    }
+    .info-bar .tag {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 0.2rem 0.5rem;
+    }
+    .info-bar .tag b { color: var(--text); }
+
+    /* ── Legend ───────────────────────────────────────────────── */
+    .legend {
+      display: flex; gap: 1rem; max-width: 960px;
+      margin-top: 0.35rem; font-size: 0.75rem; color: var(--text-dim);
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+    .legend .dot {
+      width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+    }
+
+    /* ── Status ───────────────────────────────────────────────── */
+    #status {
+      max-width: 960px; margin-top: 0.5rem;
+      font-size: 0.8rem; color: var(--text-dim);
+      white-space: pre-wrap; font-family: "SF Mono", "Fira Code", monospace;
+    }
+
+    /* ── Drop overlay ─────────────────────────────────────────── */
+    .drop-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(10, 14, 26, 0.85);
+      z-index: 100; align-items: center; justify-content: center;
+      font-size: 1.3rem; color: var(--accent); font-weight: 600;
+    }
+    .drop-overlay.visible { display: flex; }
   </style>
 </head>
 <body>
-<h1>Robotarium Python Simulator (Web)</h1>
-<p>Step 1: keep default <code>Exp_01a_12Feb26.py</code> or upload your own <code>.py</code>. Step 2: press Play.</p>
-<div class="row">
+
+<h1>Robotarium Web Simulator v3</h1>
+<p class="subtitle">Georgia Tech Robotarium &mdash; browser-based experiment preview (Pyodide + Canvas)</p>
+
+<div class="controls">
+  <label class="btn" for="fileInput">Upload .py</label>
   <input id="fileInput" type="file" accept=".py" />
-  <button id="playBtn">Play simulator</button>
+  <button id="playBtn" class="primary" disabled>Play</button>
+  <button id="pauseBtn" disabled>Pause</button>
+  <button id="restartBtn" disabled>Restart</button>
+  <div class="speed-group">
+    <button data-speed="0.5">0.5x</button>
+    <button data-speed="1" class="active">1x</button>
+    <button data-speed="2">2x</button>
+    <button data-speed="4">4x</button>
+  </div>
+  <label class="btn" style="cursor:pointer; font-size:0.75rem;">
+    <input type="checkbox" id="trailToggle" checked style="margin-right:0.25rem;" /> Trails
+  </label>
 </div>
-<canvas id="canvas" width="900" height="560"></canvas>
-<pre id="status">Loading...</pre>
+
+<div class="canvas-wrap">
+  <canvas id="canvas" width="960" height="600"></canvas>
+</div>
+
+<div class="timeline">
+  <div class="phase phase-1" data-phase="1">1 Distress</div>
+  <div class="phase phase-2" data-phase="2">2 Dispatch</div>
+  <div class="phase phase-3" data-phase="3">3 Treatment</div>
+  <div class="phase phase-4" data-phase="4">4 Evacuation</div>
+  <div class="phase phase-5" data-phase="5">5 Recovery</div>
+</div>
+
+<div class="info-bar">
+  <span class="tag">Robots: <b id="infoRobots">--</b></span>
+  <span class="tag">Frame: <b id="infoFrame">--</b></span>
+  <span class="tag">Time: <b id="infoTime">--</b></span>
+  <span class="tag">Phase: <b id="infoPhase">--</b></span>
+  <span class="tag">Speed: <b id="infoSpeed">1x</b></span>
+</div>
+
+<div class="legend">
+  <span><span class="dot" style="background:var(--doctor)"></span> Doctors (0-4)</span>
+  <span><span class="dot" style="background:var(--patient)"></span> Patients (5-13)</span>
+  <span><span class="dot" style="background:#94a3b8; width:8px; height:8px;"></span> Heading arrow</span>
+  <span style="opacity:0.6;">Arena: 3.2m x 2.0m</span>
+</div>
+
+<pre id="status">Initialising Pyodide runtime...</pre>
+
+<div class="drop-overlay" id="dropOverlay">Drop .py file here</div>
+
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script>
-const status = document.getElementById('status');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let pyodide;
-let uploadedScript = null;
+/* ═══════════════════════════════════════════════════════════════════
+   Robotarium Web Simulator v3 — JavaScript runtime
+   ═══════════════════════════════════════════════════════════════════ */
 
-function arenaToPx(x, y){
-  const nx = (x + 1.6) / 3.2;
-  const ny = 1 - ((y + 1.0) / 2.0);
+const $ = function(id){ return document.getElementById(id); };
+const status  = $('status');
+const canvas  = $('canvas');
+const ctx     = canvas.getContext('2d');
+const playBtn = $('playBtn');
+const pauseBtn = $('pauseBtn');
+const restartBtn = $('restartBtn');
+
+var pyodide = null;
+var uploadedScript = null;
+var frames = null;
+var frameIdx = 0;
+var animId = null;
+var paused = false;
+var playbackSpeed = 1;
+var showTrails = true;
+var numDoctors = 5;
+var totalRobots = 14;
+
+/* ── Phase definitions (iteration ranges) ───────────────────────── */
+var PHASES = [
+  { name: 'Distress Signal',           start: 0,    end: 240  },
+  { name: 'Dispatch and Triage',       start: 240,  end: 600  },
+  { name: 'Treatment and Stabilization', start: 600, end: 1140 },
+  { name: 'Evacuation Convoy',         start: 1140, end: 1500 },
+  { name: 'Recovery Formation',        start: 1500, end: 1800 }
+];
+
+/* ── Coordinate transforms ──────────────────────────────────────── */
+function arenaToPx(x, y) {
+  var nx = (x + 1.6) / 3.2;
+  var ny = 1 - ((y + 1.0) / 2.0);
   return [nx * canvas.width, ny * canvas.height];
 }
 
-function drawFrame(poses){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = '#f7fafc';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  poses.forEach((p, i) => {
-    const [px, py] = arenaToPx(p[0], p[1]);
-    const isDoctor = i < 5;
+/* ── Arena drawing ──────────────────────────────────────────────── */
+function drawArena() {
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  /* Grid lines every 0.4m */
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 0.5;
+  var gx, gy, px, py, pt;
+  for (gx = -1.6; gx <= 1.601; gx += 0.4) {
+    pt = arenaToPx(gx, 0);
+    ctx.beginPath(); ctx.moveTo(pt[0], 0); ctx.lineTo(pt[0], canvas.height); ctx.stroke();
+  }
+  for (gy = -1.0; gy <= 1.001; gy += 0.4) {
+    pt = arenaToPx(0, gy);
+    ctx.beginPath(); ctx.moveTo(0, pt[1]); ctx.lineTo(canvas.width, pt[1]); ctx.stroke();
+  }
+
+  /* Axis labels */
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  for (gx = -1.6; gx <= 1.601; gx += 0.8) {
+    pt = arenaToPx(gx, 0);
+    ctx.fillText(gx.toFixed(1), pt[0], canvas.height - 4);
+  }
+  ctx.textAlign = 'right';
+  for (gy = -1.0; gy <= 1.001; gy += 0.5) {
+    pt = arenaToPx(0, gy);
+    ctx.fillText(gy.toFixed(1), 28, pt[1] + 3);
+  }
+
+  /* Border */
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 2;
+  var b0 = arenaToPx(-1.6, 1.0);
+  var b1 = arenaToPx(1.6, -1.0);
+  ctx.strokeRect(b0[0], b0[1], b1[0] - b0[0], b1[1] - b0[1]);
+
+  /* Center cross */
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 0.8;
+  var cc = arenaToPx(0, 0);
+  ctx.beginPath(); ctx.moveTo(cc[0] - 8, cc[1]); ctx.lineTo(cc[0] + 8, cc[1]); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cc[0], cc[1] - 8); ctx.lineTo(cc[0], cc[1] + 8); ctx.stroke();
+}
+
+/* ── Trail history ──────────────────────────────────────────────── */
+function drawTrails(currentIdx) {
+  if (!showTrails || !frames || currentIdx < 2) return;
+  var trailLen = Math.min(80, currentIdx);
+  var startIdx = currentIdx - trailLen;
+  var r, fi, p, pt, first;
+
+  for (r = 0; r < totalRobots; r++) {
+    var isDoc = r < numDoctors;
+    ctx.strokeStyle = isDoc ? 'rgba(59,130,246,0.18)' : 'rgba(239,68,68,0.18)';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(px, py, 8, 0, Math.PI * 2);
-    ctx.fillStyle = isDoctor ? '#1d4ed8' : '#dc2626';
-    ctx.fill();
-  });
-}
-
-async function init(){
-  pyodide = await loadPyodide();
-  await pyodide.loadPackage('numpy');
-  uploadedScript = await fetch('../Exp_01a_12Feb26.py').then(r => r.text()).catch(() => '');
-  status.textContent = 'Ready.';
-}
-
-const bootstrap = `
-import sys, types, numpy as np
-FRAME_LOG = []
-
-class Robotarium:
-    def __init__(self, number_of_robots, show_figure=False, initial_conditions=None, sim_in_real_time=False, time_step=0.033):
-        self.number_of_robots = int(number_of_robots)
-        self.poses = np.array(initial_conditions, dtype=float) if initial_conditions is not None else np.zeros((3, self.number_of_robots))
-        self._dxu = np.zeros((2, self.number_of_robots))
-        FRAME_LOG.append(self.poses.copy())
-        self.time_step = float(time_step)
-    def get_poses(self): return self.poses.copy()
-    def set_velocities(self, ids, dxu): self._dxu[:, np.asarray(ids, dtype=int)] = dxu
-    def step(self):
-        t = self.poses[2,:]
-        self.poses[0,:] += self.time_step*self._dxu[0,:]*np.cos(t)
-        self.poses[1,:] += self.time_step*self._dxu[0,:]*np.sin(t)
-        self.poses[2,:] += self.time_step*self._dxu[1,:]
-        self.poses[0,:] = np.clip(self.poses[0,:], -1.6, 1.6)
-        self.poses[1,:] = np.clip(self.poses[1,:], -1.0, 1.0)
-        FRAME_LOG.append(self.poses.copy())
-    def call_at_scripts_end(self): pass
-
-def create_si_position_controller(x_velocity_gain=1.0, y_velocity_gain=1.0, velocity_magnitude_limit=0.12):
-    def c(current, target):
-        e = target-current
-        d = np.vstack((x_velocity_gain*e[0,:], y_velocity_gain*e[1,:]))
-        m = np.linalg.norm(d, axis=0)
-        over = m > velocity_magnitude_limit
-        if np.any(over): d[:, over] *= velocity_magnitude_limit/m[over]
-        return d
-    return c
-
-def create_single_integrator_barrier_certificate_with_boundary(safety_radius=0.17):
-    def b(dxi, x):
-        out = np.array(dxi, copy=True)
-        n = x.shape[1]
-        for i in range(n):
-            for j in range(i+1, n):
-                diff = x[:2, i]-x[:2, j]
-                d = np.linalg.norm(diff)
-                if d < safety_radius and d > 1e-6:
-                    push = (safety_radius-d)*(diff/d)
-                    out[:,i] += 0.3*push; out[:,j] -= 0.3*push
-        return out
-    return b
-
-def create_si_to_uni_dynamics(linear_velocity_gain=1, angular_velocity_limit=np.pi):
-    def f(dxi, x):
-        th = x[2,:]
-        des = np.arctan2(dxi[1,:], dxi[0,:])
-        err = (des-th+np.pi)%(2*np.pi)-np.pi
-        return np.vstack((np.linalg.norm(dxi, axis=0)*linear_velocity_gain, np.clip(2*err, -angular_velocity_limit, angular_velocity_limit)))
-    return f
-
-rps = types.ModuleType('rps')
-robotarium_mod = types.ModuleType('rps.robotarium'); robotarium_mod.Robotarium = Robotarium
-util = types.ModuleType('rps.utilities')
-ctrl = types.ModuleType('rps.utilities.controllers'); ctrl.create_si_position_controller = create_si_position_controller
-bc = types.ModuleType('rps.utilities.barrier_certificates'); bc.create_single_integrator_barrier_certificate_with_boundary = create_single_integrator_barrier_certificate_with_boundary
-tr = types.ModuleType('rps.utilities.transformations'); tr.create_si_to_uni_dynamics = create_si_to_uni_dynamics
-misc = types.ModuleType('rps.utilities.misc')
-sys.modules['rps']=rps
-sys.modules['rps.robotarium']=robotarium_mod
-sys.modules['rps.utilities']=util
-sys.modules['rps.utilities.controllers']=ctrl
-sys.modules['rps.utilities.barrier_certificates']=bc
-sys.modules['rps.utilities.transformations']=tr
-sys.modules['rps.utilities.misc']=misc
-`;
-
-async function runSimulation() {
-  status.textContent = 'Running python simulation...';
-  const script = uploadedScript || '';
-  try {
-    await pyodide.runPythonAsync(bootstrap + '\n' + script);
-    const framesObj = pyodide.runPython('[[[float(v) for v in row] for row in frame[:2].T] for frame in FRAME_LOG]');
-    const frames = framesObj.toJs({create_proxies:false});
-    status.textContent = `Completed. Frames: ${frames.length}`;
-    let i=0;
-    const timer = setInterval(() => {
-      drawFrame(frames[i]);
-      i += 2;
-      if(i >= frames.length){ clearInterval(timer); }
-    }, 33);
-  } catch (err) {
-    status.textContent = 'Error: ' + err;
+    first = true;
+    for (fi = startIdx; fi <= currentIdx; fi += 2) {
+      if (fi < 0 || fi >= frames.length) continue;
+      p = frames[fi][r];
+      pt = arenaToPx(p[0], p[1]);
+      if (first) { ctx.moveTo(pt[0], pt[1]); first = false; }
+      else ctx.lineTo(pt[0], pt[1]);
+    }
+    ctx.stroke();
   }
 }
 
-document.getElementById('fileInput').addEventListener('change', (e) => {
-  const file = e.target.files?.[0];
-  if(!file) return;
-  file.text().then(t => { uploadedScript = t; status.textContent = `Loaded: ${file.name}`; });
+/* ── Robot drawing (GRITSBot wedge with heading) ────────────────── */
+function drawRobot(x, y, theta, index) {
+  var pt = arenaToPx(x, y);
+  var px = pt[0], py = pt[1];
+  var isDoctor = index < numDoctors;
+  var baseColor = isDoctor ? '#3b82f6' : '#ef4444';
+  var ringColor = isDoctor ? '#1d4ed8' : '#b91c1c';
+  var size = 10;
+
+  ctx.save();
+  ctx.translate(px, py);
+
+  /* Shadow */
+  ctx.beginPath();
+  ctx.arc(1, 1, size + 1, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  ctx.fill();
+
+  /* Body circle */
+  ctx.beginPath();
+  ctx.arc(0, 0, size, 0, Math.PI * 2);
+  ctx.fillStyle = baseColor;
+  ctx.fill();
+  ctx.strokeStyle = ringColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  /* Heading indicator (wedge) — negate theta because canvas y is flipped */
+  var canvasTheta = -theta;
+  ctx.rotate(canvasTheta);
+  ctx.beginPath();
+  ctx.moveTo(size + 5, 0);
+  ctx.lineTo(-2, -4);
+  ctx.lineTo(-2, 4);
+  ctx.closePath();
+  ctx.fillStyle = ringColor;
+  ctx.fill();
+
+  ctx.restore();
+
+  /* Index label */
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 8px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(index), px, py);
+}
+
+/* ── Full frame render ──────────────────────────────────────────── */
+function drawFrame(idx) {
+  if (!frames || idx >= frames.length) return;
+  var poses = frames[idx];
+
+  drawArena();
+  drawTrails(idx);
+
+  for (var i = 0; i < poses.length; i++) {
+    var p = poses[i];
+    drawRobot(p[0], p[1], p[2], i);
+  }
+}
+
+/* ── Phase detection ────────────────────────────────────────────── */
+function getPhase(idx) {
+  for (var p = 0; p < PHASES.length; p++) {
+    if (idx < PHASES[p].end) return p;
+  }
+  return PHASES.length - 1;
+}
+
+function updatePhaseHighlight(idx) {
+  var active = getPhase(idx);
+  var els = document.querySelectorAll('.timeline .phase');
+  for (var i = 0; i < els.length; i++) {
+    if (i === active) els[i].classList.add('active');
+    else els[i].classList.remove('active');
+  }
+  $('infoPhase').textContent = PHASES[active].name;
+}
+
+/* ── Info bar update ────────────────────────────────────────────── */
+function updateInfo(idx) {
+  $('infoFrame').textContent = idx + ' / ' + (frames.length - 1);
+  $('infoTime').textContent = (idx * 0.033).toFixed(1) + 's / 60s';
+  $('infoRobots').textContent = totalRobots + ' (' + numDoctors + 'D + ' + (totalRobots - numDoctors) + 'P)';
+  $('infoSpeed').textContent = playbackSpeed + 'x';
+  updatePhaseHighlight(idx);
+}
+
+/* ── Playback loop ──────────────────────────────────────────────── */
+var lastFrameTime = 0;
+var BASE_INTERVAL = 33; /* ms per frame at 1x (matches 30 Hz sim) */
+
+function animate(timestamp) {
+  if (paused) { animId = requestAnimationFrame(animate); return; }
+  var elapsed = timestamp - lastFrameTime;
+  var interval = BASE_INTERVAL / playbackSpeed;
+
+  if (elapsed >= interval) {
+    lastFrameTime = timestamp;
+    frameIdx += 2;
+    if (frameIdx >= frames.length) {
+      frameIdx = frames.length - 1;
+      drawFrame(frameIdx);
+      updateInfo(frameIdx);
+      status.textContent = 'Playback complete.';
+      pauseBtn.disabled = true;
+      return;
+    }
+    drawFrame(frameIdx);
+    updateInfo(frameIdx);
+  }
+  animId = requestAnimationFrame(animate);
+}
+
+function startPlayback() {
+  frameIdx = 0;
+  paused = false;
+  lastFrameTime = 0;
+  pauseBtn.textContent = 'Pause';
+  pauseBtn.disabled = false;
+  restartBtn.disabled = false;
+  if (animId) cancelAnimationFrame(animId);
+  animId = requestAnimationFrame(animate);
+}
+
+/* ── Bootstrap Python code (full rps API embedded for browser) ── */
+var bootstrap = [
+'import sys, types, numpy as np',
+'FRAME_LOG = []',
+'',
+'class Robotarium:',
+'    MAX_LINEAR_VELOCITY = 0.2',
+'    MAX_ANGULAR_VELOCITY = float(np.pi)',
+'    BOUNDARY_X = 1.6',
+'    BOUNDARY_Y = 1.0',
+'    def __init__(self, number_of_robots, show_figure=False, initial_conditions=None, sim_in_real_time=False, time_step=0.033):',
+'        self.number_of_robots = int(number_of_robots)',
+'        self.show_figure = bool(show_figure)',
+'        self.sim_in_real_time = bool(sim_in_real_time)',
+'        self.time_step = float(time_step)',
+'        self.poses = np.array(initial_conditions, dtype=float) if initial_conditions is not None else np.zeros((3, self.number_of_robots))',
+'        self._dxu = np.zeros((2, self.number_of_robots))',
+'        self.velocities = np.zeros((2, self.number_of_robots))',
+'        FRAME_LOG.append(self.poses.copy())',
+'    def get_poses(self): return self.poses.copy()',
+'    def set_velocities(self, ids, dxu):',
+'        ids = np.asarray(ids, dtype=int); dxu = np.asarray(dxu, dtype=float)',
+'        dxu[0,:] = np.clip(dxu[0,:], -self.MAX_LINEAR_VELOCITY, self.MAX_LINEAR_VELOCITY)',
+'        dxu[1,:] = np.clip(dxu[1,:], -self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY)',
+'        self._dxu[:, ids] = dxu; self.velocities[:, ids] = dxu',
+'    def step(self):',
+'        t = self.poses[2,:]',
+'        self.poses[0,:] += self.time_step*self._dxu[0,:]*np.cos(t)',
+'        self.poses[1,:] += self.time_step*self._dxu[0,:]*np.sin(t)',
+'        self.poses[2,:] += self.time_step*self._dxu[1,:]',
+'        self.poses[2,:] = (self.poses[2,:]+np.pi)%(2*np.pi)-np.pi',
+'        self.poses[0,:] = np.clip(self.poses[0,:], -self.BOUNDARY_X, self.BOUNDARY_X)',
+'        self.poses[1,:] = np.clip(self.poses[1,:], -self.BOUNDARY_Y, self.BOUNDARY_Y)',
+'        FRAME_LOG.append(self.poses.copy())',
+'    def set_left_leds(self, ids, colors): pass',
+'    def set_right_leds(self, ids, colors): pass',
+'    def call_at_scripts_end(self): pass',
+'',
+'def create_si_position_controller(x_velocity_gain=1.0, y_velocity_gain=1.0, velocity_magnitude_limit=0.12):',
+'    def c(current, target):',
+'        e = target-current',
+'        d = np.vstack((x_velocity_gain*e[0,:], y_velocity_gain*e[1,:]))',
+'        m = np.linalg.norm(d, axis=0)',
+'        over = m > velocity_magnitude_limit',
+'        if np.any(over): d[:, over] *= velocity_magnitude_limit/m[over]',
+'        return d',
+'    return c',
+'',
+'def create_clf_unicycle_position_controller(linear_velocity_gain=0.8, angular_velocity_gain=3.0, velocity_magnitude_limit=0.15, angular_velocity_limit=float(np.pi)):',
+'    def c(states, targets):',
+'        n = states.shape[1]; dxu = np.zeros((2, n))',
+'        for i in range(n):',
+'            dx = targets[0,i]-states[0,i]; dy = targets[1,i]-states[1,i]',
+'            dist = np.sqrt(dx**2+dy**2)',
+'            dh = np.arctan2(dy,dx); he = (dh-states[2,i]+np.pi)%(2*np.pi)-np.pi',
+'            dxu[0,i] = linear_velocity_gain*dist*np.cos(he)',
+'            dxu[1,i] = angular_velocity_gain*he',
+'        dxu[0,:] = np.clip(dxu[0,:], -velocity_magnitude_limit, velocity_magnitude_limit)',
+'        dxu[1,:] = np.clip(dxu[1,:], -angular_velocity_limit, angular_velocity_limit)',
+'        return dxu',
+'    return c',
+'',
+'def create_clf_unicycle_pose_controller(linear_velocity_gain=0.8, angular_velocity_gain=3.0, rotation_error_gain=0.4, velocity_magnitude_limit=0.15, angular_velocity_limit=float(np.pi)):',
+'    def c(states, targets):',
+'        n = states.shape[1]; dxu = np.zeros((2, n))',
+'        for i in range(n):',
+'            dx = targets[0,i]-states[0,i]; dy = targets[1,i]-states[1,i]',
+'            dist = np.sqrt(dx**2+dy**2)',
+'            dh = np.arctan2(dy,dx); he = (dh-states[2,i]+np.pi)%(2*np.pi)-np.pi',
+'            if dist > 0.02:',
+'                dxu[0,i] = linear_velocity_gain*dist*np.cos(he)',
+'                dxu[1,i] = angular_velocity_gain*he',
+'            else:',
+'                te = (targets[2,i]-states[2,i]+np.pi)%(2*np.pi)-np.pi',
+'                dxu[0,i] = 0.0; dxu[1,i] = rotation_error_gain*te',
+'        dxu[0,:] = np.clip(dxu[0,:], -velocity_magnitude_limit, velocity_magnitude_limit)',
+'        dxu[1,:] = np.clip(dxu[1,:], -angular_velocity_limit, angular_velocity_limit)',
+'        return dxu',
+'    return c',
+'',
+'def create_single_integrator_barrier_certificate(safety_radius=0.17, barrier_gain=100.0, magnitude_limit=0.2):',
+'    def b(dxi, x):',
+'        out = np.array(dxi, copy=True); n = x.shape[1]',
+'        for i in range(n):',
+'            for j in range(i+1, n):',
+'                diff = x[:2,i]-x[:2,j]; d = np.linalg.norm(diff)',
+'                if d < safety_radius and d > 1e-6:',
+'                    push = (safety_radius-d)*(diff/d)',
+'                    out[:,i] += 0.3*push; out[:,j] -= 0.3*push',
+'        return out',
+'    return b',
+'',
+'def create_single_integrator_barrier_certificate_with_boundary(safety_radius=0.17, boundary_margin=0.05, magnitude_limit=0.2):',
+'    def b(dxi, x):',
+'        out = np.array(dxi, copy=True); n = x.shape[1]',
+'        for i in range(n):',
+'            for j in range(i+1, n):',
+'                diff = x[:2,i]-x[:2,j]; d = np.linalg.norm(diff)',
+'                if d < safety_radius and d > 1e-6:',
+'                    push = (safety_radius-d)*(diff/d)',
+'                    out[:,i] += 0.3*push; out[:,j] -= 0.3*push',
+'            if x[0,i] < -1.6+boundary_margin: out[0,i] = abs(out[0,i])',
+'            if x[0,i] > 1.6-boundary_margin: out[0,i] = -abs(out[0,i])',
+'            if x[1,i] < -1.0+boundary_margin: out[1,i] = abs(out[1,i])',
+'            if x[1,i] > 1.0-boundary_margin: out[1,i] = -abs(out[1,i])',
+'        return out',
+'    return b',
+'',
+'def create_unicycle_barrier_certificate(safety_radius=0.15, projection_distance=0.05, barrier_gain=100.0, magnitude_limit=0.2):',
+'    si_b = create_single_integrator_barrier_certificate(safety_radius=safety_radius, barrier_gain=barrier_gain, magnitude_limit=magnitude_limit)',
+'    def b(dxu, x):',
+'        n = x.shape[1]; th = x[2,:]',
+'        xp = np.zeros((2,n)); xp[0,:] = x[0,:]+projection_distance*np.cos(th); xp[1,:] = x[1,:]+projection_distance*np.sin(th)',
+'        dxi = np.zeros((2,n)); dxi[0,:] = dxu[0,:]*np.cos(th)-projection_distance*dxu[1,:]*np.sin(th); dxi[1,:] = dxu[0,:]*np.sin(th)+projection_distance*dxu[1,:]*np.cos(th)',
+'        ds = si_b(dxi, xp); out = np.zeros((2,n))',
+'        for i in range(n):',
+'            c=np.cos(th[i]); s=np.sin(th[i])',
+'            out[0,i]=c*ds[0,i]+s*ds[1,i]; out[1,i]=(-s*ds[0,i]+c*ds[1,i])/max(projection_distance,1e-6)',
+'        return out',
+'    return b',
+'',
+'def create_unicycle_barrier_certificate_with_boundary(safety_radius=0.15, projection_distance=0.05, boundary_margin=0.05, magnitude_limit=0.2):',
+'    si_b = create_single_integrator_barrier_certificate_with_boundary(safety_radius=safety_radius, boundary_margin=boundary_margin, magnitude_limit=magnitude_limit)',
+'    def b(dxu, x):',
+'        n = x.shape[1]; th = x[2,:]',
+'        xp = np.zeros((2,n)); xp[0,:] = x[0,:]+projection_distance*np.cos(th); xp[1,:] = x[1,:]+projection_distance*np.sin(th)',
+'        dxi = np.zeros((2,n)); dxi[0,:] = dxu[0,:]*np.cos(th)-projection_distance*dxu[1,:]*np.sin(th); dxi[1,:] = dxu[0,:]*np.sin(th)+projection_distance*dxu[1,:]*np.cos(th)',
+'        ds = si_b(dxi, xp); out = np.zeros((2,n))',
+'        for i in range(n):',
+'            c=np.cos(th[i]); s=np.sin(th[i])',
+'            out[0,i]=c*ds[0,i]+s*ds[1,i]; out[1,i]=(-s*ds[0,i]+c*ds[1,i])/max(projection_distance,1e-6)',
+'        return out',
+'    return b',
+'',
+'def create_si_to_uni_dynamics(linear_velocity_gain=1, angular_velocity_limit=float(np.pi)):',
+'    def f(dxi, x):',
+'        th = x[2,:]; des = np.arctan2(dxi[1,:], dxi[0,:])',
+'        err = (des-th+np.pi)%(2*np.pi)-np.pi',
+'        return np.vstack((np.linalg.norm(dxi, axis=0)*linear_velocity_gain, np.clip(2*err, -angular_velocity_limit, angular_velocity_limit)))',
+'    return f',
+'',
+'def create_si_to_uni_dynamics_with_obstacles(linear_velocity_gain=1.0, angular_velocity_limit=float(np.pi), projection_distance=0.05):',
+'    def f(dxi, x):',
+'        n = x.shape[1]; th = x[2,:]; dxu = np.zeros((2,n))',
+'        for i in range(n):',
+'            c=np.cos(th[i]); s=np.sin(th[i])',
+'            dxu[0,i]=c*dxi[0,i]+s*dxi[1,i]; dxu[1,i]=(-s*dxi[0,i]+c*dxi[1,i])/max(projection_distance,1e-6)',
+'        dxu[0,:] *= linear_velocity_gain',
+'        dxu[1,:] = np.clip(dxu[1,:], -angular_velocity_limit, angular_velocity_limit)',
+'        return dxu',
+'    return f',
+'',
+'def create_uni_to_si_dynamics(projection_distance=0.05):',
+'    def f(dxu, x):',
+'        th = x[2,:]; dxi = np.zeros((2, x.shape[1]))',
+'        dxi[0,:] = dxu[0,:]*np.cos(th)-projection_distance*dxu[1,:]*np.sin(th)',
+'        dxi[1,:] = dxu[0,:]*np.sin(th)+projection_distance*dxu[1,:]*np.cos(th)',
+'        return dxi',
+'    return f',
+'',
+'def _cycle_GL(n):',
+'    L = np.zeros((n,n))',
+'    for i in range(n):',
+'        L[i,i]=2; L[i,(i+1)%n]=-1; L[i,(i-1)%n]=-1',
+'    return L',
+'',
+'def _lineGL(n):',
+'    L = np.zeros((n,n))',
+'    for i in range(n):',
+'        if i>0: L[i,i]+=1; L[i,i-1]=-1',
+'        if i<n-1: L[i,i]+=1; L[i,i+1]=-1',
+'    return L',
+'',
+'def _completeGL(n): return n*np.eye(n)-np.ones((n,n))',
+'',
+'def _topological_neighbors(L, agent):',
+'    return np.where(L[agent,:]<0)[0]',
+'',
+'def _at_pose(states, targets, pe=0.05, re=0.2):',
+'    n = states.shape[1]; c = np.zeros(n, dtype=bool)',
+'    for i in range(n):',
+'        c[i] = np.linalg.norm(states[:2,i]-targets[:2,i])<pe and abs(((states[2,i]-targets[2,i])+np.pi)%(2*np.pi)-np.pi)<re',
+'    return c',
+'',
+'def _at_position(states, targets, pe=0.05):',
+'    n = states.shape[1]; c = np.zeros(n, dtype=bool)',
+'    for i in range(n): c[i] = np.linalg.norm(states[:2,i]-targets[:2,i])<pe',
+'    return c',
+'',
+'# Module wiring',
+'rps = types.ModuleType("rps")',
+'robotarium_mod = types.ModuleType("rps.robotarium"); robotarium_mod.Robotarium = Robotarium',
+'util = types.ModuleType("rps.utilities")',
+'ctrl = types.ModuleType("rps.utilities.controllers")',
+'ctrl.create_si_position_controller = create_si_position_controller',
+'ctrl.create_clf_unicycle_position_controller = create_clf_unicycle_position_controller',
+'ctrl.create_clf_unicycle_pose_controller = create_clf_unicycle_pose_controller',
+'bc_mod = types.ModuleType("rps.utilities.barrier_certificates")',
+'bc_mod.create_single_integrator_barrier_certificate = create_single_integrator_barrier_certificate',
+'bc_mod.create_single_integrator_barrier_certificate_with_boundary = create_single_integrator_barrier_certificate_with_boundary',
+'bc_mod.create_unicycle_barrier_certificate = create_unicycle_barrier_certificate',
+'bc_mod.create_unicycle_barrier_certificate_with_boundary = create_unicycle_barrier_certificate_with_boundary',
+'tr = types.ModuleType("rps.utilities.transformations")',
+'tr.create_si_to_uni_dynamics = create_si_to_uni_dynamics',
+'tr.create_si_to_uni_dynamics_with_obstacles = create_si_to_uni_dynamics_with_obstacles',
+'tr.create_uni_to_si_dynamics = create_uni_to_si_dynamics',
+'misc = types.ModuleType("rps.utilities.misc")',
+'misc.cycle_GL = _cycle_GL; misc.lineGL = _lineGL; misc.completeGL = _completeGL',
+'misc.topological_neighbors = _topological_neighbors',
+'misc.at_pose = _at_pose; misc.at_position = _at_position',
+'sys.modules["rps"]=rps',
+'sys.modules["rps.robotarium"]=robotarium_mod',
+'sys.modules["rps.utilities"]=util',
+'sys.modules["rps.utilities.controllers"]=ctrl',
+'sys.modules["rps.utilities.barrier_certificates"]=bc_mod',
+'sys.modules["rps.utilities.transformations"]=tr',
+'sys.modules["rps.utilities.misc"]=misc',
+].join('\n');
+
+/* ── Initialisation ─────────────────────────────────────────────── */
+async function init() {
+  try {
+    pyodide = await loadPyodide();
+    await pyodide.loadPackage('numpy');
+    uploadedScript = await fetch('../Exp_01a_12Feb26.py').then(function(r){ return r.text(); }).catch(function(){ return ''; });
+    status.textContent = uploadedScript
+      ? 'Ready. Default: Exp_01a_12Feb26.py (14 robots). Press Play.'
+      : 'Ready. Upload a .py experiment file, then press Play.';
+    playBtn.disabled = false;
+  } catch (err) {
+    status.textContent = 'Failed to load Pyodide: ' + err.message;
+  }
+}
+
+/* ── Run simulation ─────────────────────────────────────────────── */
+async function runSimulation() {
+  if (!pyodide) return;
+  var script = uploadedScript || '';
+  if (!script) { status.textContent = 'No script loaded. Upload a .py file first.'; return; }
+
+  playBtn.disabled = true;
+  pauseBtn.disabled = true;
+  restartBtn.disabled = true;
+  status.textContent = 'Running Python simulation...';
+
+  try {
+    await pyodide.runPythonAsync(bootstrap + '\n' + script);
+
+    var framesProxy = pyodide.runPython(
+      '[[[float(v) for v in row] for row in frame.T] for frame in FRAME_LOG]'
+    );
+    frames = framesProxy.toJs({ create_proxies: false });
+
+    if (frames.length > 0) {
+      totalRobots = frames[0].length;
+      numDoctors = 0;
+      for (var i = 0; i < totalRobots; i++) {
+        if (frames[0][i][0] < -0.5) numDoctors++;
+        else break;
+      }
+      if (numDoctors === 0) numDoctors = Math.min(5, Math.floor(totalRobots / 2));
+    }
+
+    status.textContent = 'Simulation complete: ' + frames.length + ' frames, ' + totalRobots + ' robots. Playing...';
+    startPlayback();
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+    playBtn.disabled = false;
+  }
+}
+
+/* ── Event handlers ─────────────────────────────────────────────── */
+$('fileInput').addEventListener('change', function(e) {
+  var file = e.target.files && e.target.files[0];
+  if (!file) return;
+  file.text().then(function(t) {
+    uploadedScript = t;
+    status.textContent = 'Loaded: ' + file.name + '. Press Play.';
+    playBtn.disabled = false;
+  });
 });
-document.getElementById('playBtn').addEventListener('click', runSimulation);
+
+playBtn.addEventListener('click', runSimulation);
+
+pauseBtn.addEventListener('click', function() {
+  paused = !paused;
+  pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+});
+
+restartBtn.addEventListener('click', function() {
+  if (frames) startPlayback();
+});
+
+var speedBtns = document.querySelectorAll('.speed-group button');
+for (var si = 0; si < speedBtns.length; si++) {
+  speedBtns[si].addEventListener('click', function() {
+    for (var sj = 0; sj < speedBtns.length; sj++) speedBtns[sj].classList.remove('active');
+    this.classList.add('active');
+    playbackSpeed = parseFloat(this.dataset.speed);
+    $('infoSpeed').textContent = playbackSpeed + 'x';
+  });
+}
+
+$('trailToggle').addEventListener('change', function(e) {
+  showTrails = e.target.checked;
+});
+
+/* ── Drag and drop ──────────────────────────────────────────────── */
+var dropOverlay = $('dropOverlay');
+var dragCounter = 0;
+
+document.addEventListener('dragenter', function(e) {
+  e.preventDefault(); dragCounter++;
+  dropOverlay.classList.add('visible');
+});
+document.addEventListener('dragleave', function(e) {
+  e.preventDefault(); dragCounter--;
+  if (dragCounter <= 0) { dropOverlay.classList.remove('visible'); dragCounter = 0; }
+});
+document.addEventListener('dragover', function(e) { e.preventDefault(); });
+document.addEventListener('drop', function(e) {
+  e.preventDefault(); dragCounter = 0;
+  dropOverlay.classList.remove('visible');
+  var file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.py')) {
+    file.text().then(function(t) {
+      uploadedScript = t;
+      status.textContent = 'Loaded: ' + file.name + '. Press Play.';
+      playBtn.disabled = false;
+    });
+  }
+});
+
+/* ── Boot ────────────────────────────────────────────────────────── */
 init();
 </script>
 </body>

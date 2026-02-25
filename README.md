@@ -14,41 +14,48 @@ Overview
 This repository contains Python scripts and documentation for experiments run on the [Georgia Tech Robotarium](https://www.robotarium.gatech.edu/) - a remotely accessible, $2.5 million swarm robotics research platform funded by the National Science Foundation (NSF) and Office of Naval Research.
 
 
-## v0.2.0 Web + Local Simulator Upgrade
+## v0.3.0 Upgraded Simulator (Full API Parity + Visual Overhaul)
 
-This repository now includes a built-in Robotarium-compatible simulator that can be run:
-- **In browser (GitHub Pages, iOS-friendly):** upload/select a `.py` file and press **Play simulator**
-- **Locally in Python:** run existing experiment files directly (for pre-flight checks before Robotarium submission)
+This repository includes a built-in Robotarium-compatible simulator with full API parity against the official `robotarium_python_simulator`:
+- **In browser (GitHub Pages v3, iOS-friendly):** upload/drag a `.py` file and press **Play** — heading arrows, motion trails, phase timeline, speed controls
+- **Locally in Python:** run experiment files directly with only NumPy (pre-flight verification before Robotarium submission)
 
 ### Simulator Architecture (text diagram)
 
 ```text
-+----------------------------+      +------------------------------------+
-| User .py experiment script | ---> | Robotarium Compatibility Layer     |
-| (default: Exp_01a_12Feb26) |      | - rps.robotarium.Robotarium        |
-+----------------------------+      | - controllers / barriers / dynamics|
-                                     +-------------------+----------------+
-                                                         |
-                                                         v
-                                     +------------------------------------+
-                                     | Physics + Safety Core              |
-                                     | - unicycle integration             |
-                                     | - arena boundary clamp             |
-                                     | - collision avoidance certificates |
-                                     +-------------------+----------------+
-                                                         |
-                        +--------------------------------+-----------------+
-                        |                                                  |
-                        v                                                  v
-            +----------------------------+                    +----------------------------+
-            | Local Python execution     |                    | GitHub Pages Web Runtime   |
-            | `python Exp_01a_12Feb26.py`|                    | Pyodide + Canvas + Upload  |
-            +----------------------------+                    +----------------------------+
++─────────────────────────────+      +─────────────────────────────────────+
+| User .py experiment script  | ---> | Robotarium API Compatibility (rps/) |
+| (default: Exp_01a_12Feb26)  |      |  - Robotarium class (velocity lims) |
++─────────────────────────────+      |  - SI + CLF unicycle controllers    |
+                                      |  - SI + Uni barrier certificates    |
+                                      |  - SI <-> Uni transformations       |
+                                      |  - Graph Laplacians, convergence    |
+                                      +─────────────────┬───────────────────+
+                                                        |
+                                                        v
+                                      +─────────────────────────────────────+
+                                      | Physics + Safety Core               |
+                                      |  - Unicycle kinematics integration  |
+                                      |  - GRITSBot velocity limits         |
+                                      |  - Arena boundary clamp [-1.6,1.6]  |
+                                      |  - Heading normalisation [-pi,pi]   |
+                                      |  - Collision avoidance certificates |
+                                      +─────────────────┬───────────────────+
+                                                        |
+                         +──────────────────────────────+──────────────────+
+                         |                                                 |
+                         v                                                 v
+             +────────────────────────+                   +─────────────────────────────+
+             | Local Python (headless)|                   | GitHub Pages Web Sim v3     |
+             | python Exp_01a_12Feb26 |                   | Pyodide + Canvas + Upload   |
+             +────────────────────────+                   | Heading wedges, trails,     |
+                                                          | phase timeline, speed ctrl  |
+                                                          +─────────────────────────────+
 ```
 
 ### Quick Start (no terminal on iOS)
 1. Open GitHub Pages for this repo (serving `docs/index.html`).
-2. Keep default script or upload/drag a `.py` Robotarium script, then press **Play simulator**.
+2. Keep default script or upload/drag a `.py` Robotarium script, then press **Play**.
 
 ### Quick Start (local pre-flight check)
 ```bash
