@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.3.1 - Dual-Experiment Simulator + CI Hardening
+
+### Added
+
+**Web Simulator v3.1 (`docs/index.html`)**
+- Experiment selector dropdown: choose between 14-robot swarm and 2-robot nurse-patient without uploading files.
+- Dynamic legend and phase timeline that adapts to the loaded experiment (Doctor/Patient vs Nurse/Patient labels, different phase names and durations).
+- FRAME_LOG reset between runs so the simulator can be replayed without page reload.
+- Larger robot rendering for small experiments (2-4 robots).
+
+**CI / Build (`ci.yml`, `requirements.txt`)**
+- `requirements.txt` for explicit dependency management (`numpy>=1.24`).
+- CI now installs dependencies from `requirements.txt` instead of inline pip install.
+- Added second smoke test step: `python main.py` (2-robot experiment) runs alongside `Exp_01a_12Feb26.py`.
+
+**Documentation**
+- Web Simulator link at the top of `README.md` for one-click access.
+- Three text diagrams in README: Simulator Architecture, Arena Top-Down View, Experiment Timeline Comparison.
+- Explicit Exp_01a_12Feb26 experiment section in README with video link and details.
+- Updated `docs/simulator.md` with v0.3.1 architecture and v0.3.0-to-v0.3.1 comparison table.
+- New `releases/v0.3.1.md` release notes.
+- Updated Quick Start instructions to reference both experiments and `requirements.txt`.
+
+### Changed
+- `docs/index.html`: title updated to v3.1, experiment selector added, legend and timeline made dynamic, init loads both built-in scripts.
+- `.github/workflows/ci.yml`: dependency install split into pip upgrade + ruff + requirements.txt; two separate smoke test steps.
+- `README.md`: restructured with simulation link at top, 3 diagrams, updated version references, added Exp_01a section, updated prerequisites and local simulation instructions.
+- `changelog.md`: added v0.3.1 entry.
+
+### Compatibility
+- Both `main.py` and `Exp_01a_12Feb26.py` run unchanged against v0.3.1.
+- All files pass ruff lint + format for Python 3.10, 3.11, 3.12.
+
+---
+
 ## v0.3.0 - Upgraded Python Simulator v3 (Full API Parity + Visual Overhaul)
 
 ### Added

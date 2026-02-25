@@ -1,13 +1,13 @@
-# Simulator Design (v0.3.0)
+# Simulator Design (v0.3.1)
 
-The v0.3.0 simulator provides full API parity with the official `robotarium_python_simulator` while running entirely in-browser via Pyodide or locally with only NumPy.
+The v0.3.1 simulator provides full API parity with the official `robotarium_python_simulator` while running entirely in-browser via Pyodide or locally with only NumPy. The v3.1 web interface adds an experiment selector for switching between the 2-robot nurse-patient and 14-robot swarm experiments.
 
 ## Architecture Diagram
 
 ```text
 +──────────────────────────────────────────────────────────────────────────+
 |                     User Experiment Script (.py)                         |
-|             (default: Exp_01a_12Feb26.py — 14 robot swarm)               |
+|   Exp_01a_12Feb26.py (14-robot) / main.py (2-robot nurse)               |
 +─────────────────────────────────┬────────────────────────────────────────+
                                   │
                                   v
@@ -51,19 +51,39 @@ The v0.3.0 simulator provides full API parity with the official `robotarium_pyth
                    │                             │
                    v                             v
 +────────────────────────────────+  +──────────────────────────────────────+
-|   Local Python Execution       |  |   GitHub Pages Web Simulator v3      |
+|   Local Python Execution       |  |   GitHub Pages Web Simulator v3.1    |
 |   ────────────────────         |  |   ──────────────────────────────     |
 |   python Exp_01a_12Feb26.py    |  |   Pyodide runtime (Python in WASM)  |
-|   No GUI — headless CI/smoke   |  |   Canvas rendering with:            |
+|   python main.py               |  |   Canvas rendering with:            |
+|   No GUI — headless CI/smoke   |  |    - Experiment selector dropdown   |
 |   Validates safety + timing    |  |    - GRITSBot heading wedges        |
 |                                |  |    - Motion trail history            |
 +────────────────────────────────+  |    - Arena grid + labels             |
-                                    |    - Phase timeline bar              |
+                                    |    - Dynamic phase timeline          |
                                     |    - Speed controls (0.5x–4x)       |
                                     |    - Pause / Resume / Restart        |
                                     |    - Drag-and-drop .py upload        |
                                     |    - Real-time info panel            |
                                     +──────────────────────────────────────+
+```
+
+## v0.3.0 → v0.3.1 Comparison
+
+```text
+┌──────────────────────────────┬───────────────────────────┬─────────────────────────────────┐
+│ Feature                      │ v0.3.0                    │ v0.3.1                          │
+├──────────────────────────────┼───────────────────────────┼─────────────────────────────────┤
+│ Built-in experiments         │ 14-robot only (default)   │ 14-robot + 2-robot selectable   │
+│ Experiment selector          │ (none)                    │ Dropdown in web UI              │
+│ Phase timeline               │ Fixed 5-phase (swarm)     │ Dynamic per experiment          │
+│ Legend labels                 │ Fixed Doctor/Patient      │ Adapts to experiment type       │
+│ Robot rendering size         │ Fixed 10px                │ 14px for small experiments      │
+│ FRAME_LOG reset              │ (none — reload required)  │ Automatic between runs          │
+│ CI smoke tests               │ Exp_01a_12Feb26 only      │ + main.py (both experiments)    │
+│ Dependency management        │ Inline pip install        │ requirements.txt                │
+│ README diagrams              │ 1 (architecture)          │ 3 (architecture, arena, phases) │
+│ README simulation link       │ (none)                    │ Top of page link                │
+└──────────────────────────────┴───────────────────────────┴─────────────────────────────────┘
 ```
 
 ## v0.2.0 → v0.3.0 Comparison
