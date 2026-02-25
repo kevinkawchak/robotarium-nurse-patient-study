@@ -133,10 +133,14 @@
 </head>
 <body>
 
-<h1>Robotarium Web Simulator v3</h1>
+<h1>Robotarium Web Simulator v3.1</h1>
 <p class="subtitle">Georgia Tech Robotarium &mdash; browser-based experiment preview (Pyodide + Canvas)</p>
 
 <div class="controls">
+  <select id="expSelect" style="font-size:0.85rem; padding:0.4rem 0.5rem; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text); cursor:pointer;">
+    <option value="swarm">14-Robot Swarm (Exp_01a)</option>
+    <option value="nurse">2-Robot Nurse-Patient (main)</option>
+  </select>
   <label class="btn" for="fileInput">Upload .py</label>
   <input id="fileInput" type="file" accept=".py" />
   <button id="playBtn" class="primary" disabled>Play</button>
@@ -173,9 +177,9 @@
   <span class="tag">Speed: <b id="infoSpeed">1x</b></span>
 </div>
 
-<div class="legend">
-  <span><span class="dot" style="background:var(--doctor)"></span> Doctors (0-4)</span>
-  <span><span class="dot" style="background:var(--patient)"></span> Patients (5-13)</span>
+<div class="legend" id="legend">
+  <span><span class="dot" style="background:var(--doctor)"></span> <span id="legendBlue">Doctors (0-4)</span></span>
+  <span><span class="dot" style="background:var(--patient)"></span> <span id="legendRed">Patients (5-13)</span></span>
   <span><span class="dot" style="background:#94a3b8; width:8px; height:8px;"></span> Heading arrow</span>
   <span style="opacity:0.6;">Arena: 3.2m x 2.0m</span>
 </div>
@@ -200,6 +204,7 @@ const restartBtn = $('restartBtn');
 
 var pyodide = null;
 var uploadedScript = null;
+var builtinScripts = {};
 var frames = null;
 var frameIdx = 0;
 var animId = null;
@@ -208,15 +213,26 @@ var playbackSpeed = 1;
 var showTrails = true;
 var numDoctors = 5;
 var totalRobots = 14;
+var isCustomUpload = false;
 
-/* ── Phase definitions (iteration ranges) ───────────────────────── */
-var PHASES = [
-  { name: 'Distress Signal',           start: 0,    end: 240  },
-  { name: 'Dispatch and Triage',       start: 240,  end: 600  },
-  { name: 'Treatment and Stabilization', start: 600, end: 1140 },
-  { name: 'Evacuation Convoy',         start: 1140, end: 1500 },
-  { name: 'Recovery Formation',        start: 1500, end: 1800 }
+/* ── Phase definitions per experiment ──────────────────────────── */
+var SWARM_PHASES = [
+  { name: 'Distress Signal',             start: 0,    end: 240  },
+  { name: 'Dispatch and Triage',         start: 240,  end: 600  },
+  { name: 'Treatment and Stabilization', start: 600,  end: 1140 },
+  { name: 'Evacuation Convoy',           start: 1140, end: 1500 },
+  { name: 'Recovery Formation',          start: 1500, end: 1800 }
 ];
+
+var NURSE_PHASES = [
+  { name: 'Navigation',   start: 0,   end: 450  },
+  { name: 'Approach',     start: 450, end: 750  },
+  { name: 'Interaction',  start: 750, end: 900  },
+  { name: 'Return',       start: 900, end: 1350 },
+  { name: 'Complete',     start: 1350, end: 1800 }
+];
+
+var PHASES = SWARM_PHASES;
 
 /* ── Coordinate transforms ──────────────────────────────────────── */
 function arenaToPx(x, y) {
@@ -300,10 +316,10 @@ function drawTrails(currentIdx) {
 function drawRobot(x, y, theta, index) {
   var pt = arenaToPx(x, y);
   var px = pt[0], py = pt[1];
-  var isDoctor = index < numDoctors;
-  var baseColor = isDoctor ? '#3b82f6' : '#ef4444';
-  var ringColor = isDoctor ? '#1d4ed8' : '#b91c1c';
-  var size = 10;
+  var isFirst = index < numDoctors;
+  var baseColor = isFirst ? '#3b82f6' : '#ef4444';
+  var ringColor = isFirst ? '#1d4ed8' : '#b91c1c';
+  var size = totalRobots <= 4 ? 14 : 10;
 
   ctx.save();
   ctx.translate(px, py);
@@ -380,9 +396,39 @@ function updatePhaseHighlight(idx) {
 function updateInfo(idx) {
   $('infoFrame').textContent = idx + ' / ' + (frames.length - 1);
   $('infoTime').textContent = (idx * 0.033).toFixed(1) + 's / 60s';
-  $('infoRobots').textContent = totalRobots + ' (' + numDoctors + 'D + ' + (totalRobots - numDoctors) + 'P)';
+  if (totalRobots === 2) {
+    $('infoRobots').textContent = '2 (Nurse + Patient)';
+  } else {
+    $('infoRobots').textContent = totalRobots + ' (' + numDoctors + 'D + ' + (totalRobots - numDoctors) + 'P)';
+  }
   $('infoSpeed').textContent = playbackSpeed + 'x';
   updatePhaseHighlight(idx);
+}
+
+/* ── Dynamic UI update based on experiment type ─────────────────── */
+function updateUIForExperiment() {
+  var timelineEl = document.querySelector('.timeline');
+  if (totalRobots === 2) {
+    PHASES = NURSE_PHASES;
+    $('legendBlue').textContent = 'Nurse (0)';
+    $('legendRed').textContent = 'Patient (1)';
+    timelineEl.innerHTML =
+      '<div class="phase phase-1" style="flex:450">1 Navigation</div>' +
+      '<div class="phase phase-2" style="flex:300">2 Approach</div>' +
+      '<div class="phase phase-3" style="flex:150;background:#22c55e">3 Interaction</div>' +
+      '<div class="phase phase-4" style="flex:450;background:#ef4444">4 Return</div>' +
+      '<div class="phase phase-5" style="flex:450;background:#8b5cf6">5 Complete</div>';
+  } else {
+    PHASES = SWARM_PHASES;
+    $('legendBlue').textContent = 'Doctors (0-' + (numDoctors - 1) + ')';
+    $('legendRed').textContent = 'Patients (' + numDoctors + '-' + (totalRobots - 1) + ')';
+    timelineEl.innerHTML =
+      '<div class="phase phase-1" data-phase="1">1 Distress</div>' +
+      '<div class="phase phase-2" data-phase="2">2 Dispatch</div>' +
+      '<div class="phase phase-3" data-phase="3">3 Treatment</div>' +
+      '<div class="phase phase-4" data-phase="4">4 Evacuation</div>' +
+      '<div class="phase phase-5" data-phase="5">5 Recovery</div>';
+  }
 }
 
 /* ── Playback loop ──────────────────────────────────────────────── */
@@ -646,9 +692,19 @@ async function init() {
   try {
     pyodide = await loadPyodide();
     await pyodide.loadPackage('numpy');
-    uploadedScript = await fetch('../Exp_01a_12Feb26.py').then(function(r){ return r.text(); }).catch(function(){ return ''; });
+
+    /* Load both built-in experiments */
+    var results = await Promise.all([
+      fetch('../Exp_01a_12Feb26.py').then(function(r){ return r.text(); }).catch(function(){ return ''; }),
+      fetch('../main.py').then(function(r){ return r.text(); }).catch(function(){ return ''; })
+    ]);
+    builtinScripts.swarm = results[0];
+    builtinScripts.nurse = results[1];
+    uploadedScript = builtinScripts.swarm;
+    isCustomUpload = false;
+
     status.textContent = uploadedScript
-      ? 'Ready. Default: Exp_01a_12Feb26.py (14 robots). Press Play.'
+      ? 'Ready. Default: Exp_01a_12Feb26.py (14 robots). Press Play or select experiment.'
       : 'Ready. Upload a .py experiment file, then press Play.';
     playBtn.disabled = false;
   } catch (err) {
@@ -668,6 +724,8 @@ async function runSimulation() {
   status.textContent = 'Running Python simulation...';
 
   try {
+    /* Reset FRAME_LOG for fresh run */
+    pyodide.runPython('FRAME_LOG = []');
     await pyodide.runPythonAsync(bootstrap + '\n' + script);
 
     var framesProxy = pyodide.runPython(
@@ -685,6 +743,7 @@ async function runSimulation() {
       if (numDoctors === 0) numDoctors = Math.min(5, Math.floor(totalRobots / 2));
     }
 
+    updateUIForExperiment();
     status.textContent = 'Simulation complete: ' + frames.length + ' frames, ' + totalRobots + ' robots. Playing...';
     startPlayback();
   } catch (err) {
@@ -694,11 +753,23 @@ async function runSimulation() {
 }
 
 /* ── Event handlers ─────────────────────────────────────────────── */
+$('expSelect').addEventListener('change', function() {
+  var val = this.value;
+  if (builtinScripts[val]) {
+    uploadedScript = builtinScripts[val];
+    isCustomUpload = false;
+    var label = val === 'swarm' ? 'Exp_01a_12Feb26.py (14 robots)' : 'main.py (2 robots)';
+    status.textContent = 'Selected: ' + label + '. Press Play.';
+    playBtn.disabled = false;
+  }
+});
+
 $('fileInput').addEventListener('change', function(e) {
   var file = e.target.files && e.target.files[0];
   if (!file) return;
   file.text().then(function(t) {
     uploadedScript = t;
+    isCustomUpload = true;
     status.textContent = 'Loaded: ' + file.name + '. Press Play.';
     playBtn.disabled = false;
   });
