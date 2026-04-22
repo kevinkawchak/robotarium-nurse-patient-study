@@ -63,10 +63,10 @@ This repository includes a built-in Robotarium-compatible simulator with full AP
     ┌─────────────────────────────────────────────────────────┐
     │                                                         │  y = 1.0
     │                                                         │
-    │   [N]────>·····>·····>·····>[*]  Nurse path (9 waypts) │
+    │   [N]────>·····>·····>·····>[*]  Nurse path (9 waypts)  │
     │    ^  Nurse (Robot 0)       | Pause ~3s near patient    │
     │    |  starts at (-0.4, 0)   v                           │
-    │    ·                    [P]~~~  Patient (Robot 1)        │
+    │    ·                    [P]~~~  Patient (Robot 1)       │
     │    ·<·····<·····<·····<··/      starts at (0.4, 0)      │
     │    Return path              Dynamic movement varies     │
     │                             based on nurse proximity    │
