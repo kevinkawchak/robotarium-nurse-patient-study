@@ -32,9 +32,9 @@ This repository includes a built-in Robotarium-compatible simulator with full AP
 +─────────────────────────────+      |  - SI + Uni barrier certificates    |
                                      |  - SI <-> Uni transformations       |
                                      |  - Graph Laplacians, convergence    |
-                                      +─────────────────┬───────────────────+
-                                                        |
-                                                        v
+                                     +─────────────────┬───────────────────+
+                                                       |
+                                                       v
                                       +─────────────────────────────────────+
                                       | Physics + Safety Core               |
                                       |  - Unicycle kinematics integration  |
