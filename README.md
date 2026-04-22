@@ -30,8 +30,8 @@ This repository includes a built-in Robotarium-compatible simulator with full AP
 |  Exp_01a_12Feb26 (14-robot) |      |  - Robotarium class (velocity lims) |
 |  main.py (2-robot nurse)    |      |  - SI + CLF unicycle controllers    |
 +─────────────────────────────+      |  - SI + Uni barrier certificates    |
-                                      |  - SI <-> Uni transformations       |
-                                      |  - Graph Laplacians, convergence    |
+                                     |  - SI <-> Uni transformations       |
+                                     |  - Graph Laplacians, convergence    |
                                       +─────────────────┬───────────────────+
                                                         |
                                                         v
