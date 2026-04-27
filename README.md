@@ -84,23 +84,23 @@ This repository includes a built-in Robotarium-compatible simulator with full AP
 ```text
     2-Robot Nurse-Patient (main.py)              14-Robot Doctor-Patient Swarm (Exp_01a)
     ────────────────────────────────             ──────────────────────────────────────
-    0s ┬─ Navigation ──────────┐                 0s ┬─ Phase 1: Distress Signal ───┐
-       │  Nurse follows 9       │                    │  Patients oscillate (distress)│
-       │  waypoints carefully   │                    │  Doctors hold at hospital base│
-   15s ├─ Approach ────────────┤                 8s ├─ Phase 2: Dispatch & Triage ─┤
-       │  Nurse nears patient   │                    │  Doctors disperse (repulsion) │
-       │  Patient shows         │                    │  Greedy nearest-neighbor      │
-       │  awareness response    │                    │  assignment to patients       │
-   25s ├─ Interaction ─────────┤                20s ├─ Phase 3: Treatment ─────────┤
-       │  Nurse pauses ~3s      │                    │  Doctors orbit patients       │
-       │  Patient subtle motion │                    │  Unassigned patients flock    │
+    0s ┬─ Navigation ──────────┐                 0s ┬─ Phase 1: Distress Signal ────┐
+       │  Nurse follows 9      │                    │  Patients oscillate (distress)│
+       │  waypoints carefully  │                    │  Doctors hold at hospital base│
+   15s ├─ Approach ────────────┤                 8s ├─ Phase 2: Dispatch & Triage ──┤
+       │  Nurse nears patient  │                    │  Doctors disperse (repulsion) │
+       │  Patient shows        │                    │  Greedy nearest-neighbor      │
+       │  awareness respons    │                    │  assignment to patients       │
+   25s ├─ Interaction ─────────┤                20s ├─ Phase 3: Treatment ──────────┤
+       │  Nurse pauses ~3s     │                    │  Doctors orbit patients       │
+       │  Patient subtle motion│                    │  Unassigned patients flock    │
    30s ├─ Return ──────────────┤                    │  to nearest cluster           │
-       │  Nurse returns to      │                38s ├─ Phase 4: Evacuation Convoy ─┤
-       │  starting position     │                    │  All migrate toward center    │
-       │                        │                    │  Doctors lead, patients follow│
-   45s ├─ Complete ────────────┤                50s ├─ Phase 5: Recovery Formation ┤
-       │  Both robots settle    │                    │  14 robots form symmetric ring│
-   60s └────────────────────────┘                60s └──────────────────────────────┘
+       │  Nurse returns to     │                38s ├─ Phase 4: Evacuation Convoy ──┤
+       │  starting position    │                    │  All migrate toward center    │
+       │                       │                    │  Doctors lead, patients follow│
+   45s ├─ Complete ────────────┤                50s ├─ Phase 5: Recovery Formation  ┤
+       │  Both robots settle   │                    │  14 robots form symmetric ring│
+   60s └───────────────────────┘                60s └───────────────────────────────┘
 
     Robots: 2 (Nurse + Patient)                  Robots: 14 (5 Doctors + 9 Patients)
     Control: SI position + barrier               Control: SI position + barrier
