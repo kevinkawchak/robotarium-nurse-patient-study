@@ -28,6 +28,7 @@
 - `.github/workflows/ci.yml`: dependency install split into pip upgrade + ruff + requirements.txt; two separate smoke test steps.
 - `README.md`: restructured with simulation link at top, 3 diagrams, updated version references, added Exp_01a section, updated prerequisites and local simulation instructions.
 - `changelog.md`: added v0.3.1 entry.
+- @kevinkawchak added Exp_02_30Apr26.py using Claude Code on 2026-04-30.
 
 ### Compatibility
 - Both `main.py` and `Exp_01a_12Feb26.py` run unchanged against v0.3.1.
