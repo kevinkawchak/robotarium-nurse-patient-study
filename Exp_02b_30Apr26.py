@@ -311,9 +311,7 @@ def phase2_dispatch(t, xi):
         # reuse it for the rest of phase 2 + all of phase 3 so a doctor
         # already steering toward patient P never gets bounced to patient Q.
         if not assignment_locked:
-            assignment, claimed = greedy_assignment(
-                xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
-            )
+            assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
             assignment_locked = True
         for d_idx, p_idx in assignment.items():
             g_pat = NUM_DOCTORS + p_idx
@@ -334,9 +332,7 @@ def phase3_treatment(t, xi):
     dxi = np.zeros((2, N))
     # Reuse phase 2's matching unless we somehow arrived without one.
     if not assignment_locked or not assignment:
-        assignment, claimed = greedy_assignment(
-            xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
-        )
+        assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
         assignment_locked = True
 
     # Doctors orbit their assigned patient
@@ -414,9 +410,7 @@ def phase4_evacuation(t, xi):
         pos = xi[:, g_pat]
         blend = 0.2 + 0.6 * progress
         target = clamp_to_arena((1 - blend) * pos + blend * origin)
-        dxi[:, g_pat : g_pat + 1] = si_position_controller(
-            pos.reshape(2, 1), target.reshape(2, 1)
-        )
+        dxi[:, g_pat : g_pat + 1] = si_position_controller(pos.reshape(2, 1), target.reshape(2, 1))
     return dxi
 
 
