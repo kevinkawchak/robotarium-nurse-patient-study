@@ -197,41 +197,39 @@ def clamp_to_arena(pos, margin=ARENA_MARGIN):
 
 
 def distress_offsets(t, n):
-    """Jittery oscillation offsets simulating patient distress."""
-    offsets = np.zeros((2, n))
-    for i in range(n):
-        phase = i * 2.0 * np.pi / n
-        offsets[0, i] = DISTRESS_AMP * np.sin(DISTRESS_FREQ * t * 2 * np.pi + phase)
-        offsets[1, i] = DISTRESS_AMP * np.cos(DISTRESS_FREQ * t * 2 * np.pi + phase * 1.3)
+    """Vectorized jittery oscillation offsets simulating patient distress."""
+    phases = np.arange(n) * (2.0 * np.pi / n)
+    base = DISTRESS_FREQ * t * 2.0 * np.pi
+    offsets = np.empty((2, n))
+    offsets[0, :] = DISTRESS_AMP * np.sin(base + phases)
+    offsets[1, :] = DISTRESS_AMP * np.cos(base + phases * 1.3)
     return offsets
 
 
 def greedy_assignment(doc_pos, pat_pos):
-    """Each doctor claims its closest unclaimed patient (numpy-only)."""
+    """Greedy nearest-neighbor matcher.
+
+    Each iteration picks the globally smallest doctor->patient distance via
+    a single np.argmin, then masks that row + column. No Python triple-loop.
+    """
     n_doc = doc_pos.shape[1]
     n_pat = pat_pos.shape[1]
 
     dx = doc_pos[0, :, None] - pat_pos[0, None, :]
     dy = doc_pos[1, :, None] - pat_pos[1, None, :]
-    dist = np.sqrt(dx**2 + dy**2)
+    dist = np.sqrt(dx * dx + dy * dy)
 
     assignment = {}
     claimed = set()
     for _ in range(min(n_doc, n_pat)):
-        best_val = np.inf
-        best_d, best_p = -1, -1
-        for d in range(n_doc):
-            if d in assignment:
-                continue
-            for p in range(n_pat):
-                if p in claimed:
-                    continue
-                if dist[d, p] < best_val:
-                    best_val = dist[d, p]
-                    best_d, best_p = d, p
-        if best_d >= 0:
-            assignment[best_d] = best_p
-            claimed.add(best_p)
+        flat = int(np.argmin(dist))
+        d, p = divmod(flat, n_pat)
+        if not np.isfinite(dist[d, p]):
+            break
+        assignment[d] = p
+        claimed.add(p)
+        dist[d, :] = np.inf
+        dist[:, p] = np.inf
     return assignment, claimed
 
 
@@ -267,29 +265,28 @@ def phase1_distress(t, xi):
     dxi = np.zeros((2, N))
     dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doctor_home)
 
-    targets = patient_home + distress_offsets(t, NUM_PATIENTS)
-    for i in range(NUM_PATIENTS):
-        targets[:, i] = clamp_to_arena(targets[:, i])
+    targets = clamp_to_arena(patient_home + distress_offsets(t, NUM_PATIENTS))
     dxi[:, NUM_DOCTORS:] = si_position_controller(xi[:, NUM_DOCTORS:], targets)
     return dxi
 
 
 def _doctor_dispersion_targets(xi):
-    """Mutual-repulsion target positions for the 6 doctors."""
-    doc_targets = np.copy(xi[:, :NUM_DOCTORS])
-    for i in range(NUM_DOCTORS):
-        repulsion = np.zeros(2)
-        for j in range(NUM_DOCTORS):
-            if i == j:
-                continue
-            diff = xi[:, i] - xi[:, j]
-            d = max(np.linalg.norm(diff), 0.01)
-            repulsion += diff / (d**2)
-        rn = np.linalg.norm(repulsion)
-        if rn > 0:
-            repulsion = repulsion / rn * DISPERSION_GAIN
-        doc_targets[:, i] = clamp_to_arena(xi[:, i] + repulsion)
-    return doc_targets
+    """Mutual-repulsion target positions for the 6 doctors (vectorized).
+
+    Pairwise diffs as a (2, n_doc, n_doc) tensor -> inverse-square
+    contributions -> sum across the j axis -> unit-normalize -> scale.
+    """
+    doc_xi = xi[:, :NUM_DOCTORS]
+    diffs = doc_xi[:, :, None] - doc_xi[:, None, :]  # (2, n, n)
+    dists = np.linalg.norm(diffs, axis=0)  # (n, n)
+    np.fill_diagonal(dists, np.inf)  # no self-repulsion
+    dists = np.maximum(dists, 0.01)  # avoid divide-by-zero
+    contrib = diffs / (dists * dists)[None, :, :]
+    repulsion = contrib.sum(axis=2)  # (2, n)
+    mag = np.linalg.norm(repulsion, axis=0)
+    nonzero = mag > 0
+    repulsion[:, nonzero] = repulsion[:, nonzero] / mag[nonzero] * DISPERSION_GAIN
+    return clamp_to_arena(doc_xi + repulsion)
 
 
 def phase2_dispatch(t, xi):
@@ -311,9 +308,7 @@ def phase2_dispatch(t, xi):
 
     # Distress amplitude damps linearly 1.0 -> 0.2 across the phase
     damping = max(0.2, 1.0 - 0.8 * progress)
-    targets = patient_home + distress_offsets(t, NUM_PATIENTS) * damping
-    for i in range(NUM_PATIENTS):
-        targets[:, i] = clamp_to_arena(targets[:, i])
+    targets = clamp_to_arena(patient_home + distress_offsets(t, NUM_PATIENTS) * damping)
     dxi[:, NUM_DOCTORS:] = si_position_controller(xi[:, NUM_DOCTORS:], targets)
     return dxi
 
