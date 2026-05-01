@@ -254,166 +254,184 @@ final_ring = ring_formation(N, center=np.array([0.0, 0.0]), radius=RING_RADIUS)
 assignment = {}
 claimed = set()
 
+
 # ─────────────────────────────────────────────────────────────────────────────
-# MAIN LOOP
+# PER-PHASE CONTROLLERS
+#   Each phase function takes (t, xi) and returns a 2xN dxi command.
+#   Greedy `assignment` / `claimed` are updated as a side effect through the
+#   module-level globals so phases can re-use the previous matching when it
+#   is still valid.
+# ─────────────────────────────────────────────────────────────────────────────
+def phase1_distress(t, xi):
+    """0..8s: doctors hold base, patients oscillate in distress."""
+    dxi = np.zeros((2, N))
+    dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doctor_home)
+
+    targets = patient_home + distress_offsets(t, NUM_PATIENTS)
+    for i in range(NUM_PATIENTS):
+        targets[:, i] = clamp_to_arena(targets[:, i])
+    dxi[:, NUM_DOCTORS:] = si_position_controller(xi[:, NUM_DOCTORS:], targets)
+    return dxi
+
+
+def _doctor_dispersion_targets(xi):
+    """Mutual-repulsion target positions for the 6 doctors."""
+    doc_targets = np.copy(xi[:, :NUM_DOCTORS])
+    for i in range(NUM_DOCTORS):
+        repulsion = np.zeros(2)
+        for j in range(NUM_DOCTORS):
+            if i == j:
+                continue
+            diff = xi[:, i] - xi[:, j]
+            d = max(np.linalg.norm(diff), 0.01)
+            repulsion += diff / (d**2)
+        rn = np.linalg.norm(repulsion)
+        if rn > 0:
+            repulsion = repulsion / rn * DISPERSION_GAIN
+        doc_targets[:, i] = clamp_to_arena(xi[:, i] + repulsion)
+    return doc_targets
+
+
+def phase2_dispatch(t, xi):
+    """8..20s: doctors disperse then sprint to greedily-matched patients."""
+    global assignment, claimed
+    dxi = np.zeros((2, N))
+    progress = (t - PHASE_1_END) / (PHASE_2_END - PHASE_1_END)
+
+    if progress < DISPERSION_FRACTION:
+        doc_targets = _doctor_dispersion_targets(xi)
+        dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doc_targets)
+    else:
+        assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
+        for d_idx, p_idx in assignment.items():
+            g_pat = NUM_DOCTORS + p_idx
+            dxi[:, d_idx : d_idx + 1] = si_position_controller(
+                xi[:, d_idx].reshape(2, 1), xi[:, g_pat].reshape(2, 1)
+            )
+
+    # Distress amplitude damps linearly 1.0 -> 0.2 across the phase
+    damping = max(0.2, 1.0 - 0.8 * progress)
+    targets = patient_home + distress_offsets(t, NUM_PATIENTS) * damping
+    for i in range(NUM_PATIENTS):
+        targets[:, i] = clamp_to_arena(targets[:, i])
+    dxi[:, NUM_DOCTORS:] = si_position_controller(xi[:, NUM_DOCTORS:], targets)
+    return dxi
+
+
+def phase3_treatment(t, xi):
+    """20..38s: doctors orbit patients, unclaimed patients flock to clusters."""
+    global assignment, claimed
+    dxi = np.zeros((2, N))
+    assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
+
+    # Doctors orbit their assigned patient
+    for d_idx, p_idx in assignment.items():
+        g_pat = NUM_DOCTORS + p_idx
+        center = xi[:, g_pat]
+        angle = ORBIT_RATE * t + d_idx * (2 * np.pi / NUM_DOCTORS)
+        orb = clamp_to_arena(center + ORBIT_RADIUS * np.array([np.cos(angle), np.sin(angle)]))
+        dxi[:, d_idx : d_idx + 1] = si_position_controller(
+            xi[:, d_idx].reshape(2, 1), orb.reshape(2, 1)
+        )
+
+    # Claimed patients hold position
+    for p_idx in claimed:
+        dxi[:, NUM_DOCTORS + p_idx] = np.zeros(2)
+
+    # Unclaimed patients flock to the nearest cluster centroid
+    unclaimed = set(range(NUM_PATIENTS)) - claimed
+    if assignment and unclaimed:
+        centers = np.array(
+            [
+                0.5 * (xi[:, d_idx] + xi[:, NUM_DOCTORS + p_idx])
+                for d_idx, p_idx in assignment.items()
+            ]
+        ).T
+        for p_local in unclaimed:
+            g_pat = NUM_DOCTORS + p_local
+            pos = xi[:, g_pat]
+            dists = np.linalg.norm(centers - pos.reshape(2, 1), axis=0)
+            nearest = int(np.argmin(dists))
+            target = centers[:, nearest]
+            if dists[nearest] > FLOCK_STOP_DIST:
+                vel = si_position_controller(pos.reshape(2, 1), target.reshape(2, 1))
+                dxi[:, g_pat : g_pat + 1] = vel * 0.7
+            else:
+                dxi[:, g_pat] = np.zeros(2)
+    return dxi
+
+
+def phase4_evacuation(t, xi):
+    """38..50s: clusters convoy toward the origin, doctors lead from the front."""
+    global assignment, claimed
+    dxi = np.zeros((2, N))
+    progress = (t - PHASE_3_END) / (PHASE_4_END - PHASE_3_END)
+    origin = np.array([0.0, 0.0])
+
+    assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
+
+    # Doctors lead from the front of each cluster
+    for d_idx, p_idx in assignment.items():
+        g_pat = NUM_DOCTORS + p_idx
+        pat_pos = xi[:, g_pat]
+        blend = 0.3 + 0.5 * progress
+        doc_target = (1 - blend) * pat_pos + blend * origin
+
+        direction = origin - pat_pos
+        dn = np.linalg.norm(direction)
+        if dn > 0.01:
+            doc_target = doc_target + LEAD_OFFSET * (direction / dn)
+        doc_target = clamp_to_arena(doc_target)
+        dxi[:, d_idx : d_idx + 1] = si_position_controller(
+            xi[:, d_idx].reshape(2, 1), doc_target.reshape(2, 1)
+        )
+
+    # Any unassigned doctor (n_doc <= n_pat so unlikely) heads to origin
+    for d_idx in range(NUM_DOCTORS):
+        if d_idx not in assignment:
+            dxi[:, d_idx : d_idx + 1] = si_position_controller(
+                xi[:, d_idx].reshape(2, 1), origin.reshape(2, 1)
+            )
+
+    # All patients converge on the origin
+    for p_local in range(NUM_PATIENTS):
+        g_pat = NUM_DOCTORS + p_local
+        pos = xi[:, g_pat]
+        blend = 0.2 + 0.6 * progress
+        target = clamp_to_arena((1 - blend) * pos + blend * origin)
+        dxi[:, g_pat : g_pat + 1] = si_position_controller(
+            pos.reshape(2, 1), target.reshape(2, 1)
+        )
+    return dxi
+
+
+def phase5_recovery(t, xi):
+    """50..60s: every robot snaps onto its slot in the recovery ring."""
+    return si_position_controller(xi, final_ring)
+
+
+def select_phase(t):
+    if t < PHASE_1_END:
+        return phase1_distress
+    if t < PHASE_2_END:
+        return phase2_dispatch
+    if t < PHASE_3_END:
+        return phase3_treatment
+    if t < PHASE_4_END:
+        return phase4_evacuation
+    return phase5_recovery
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN LOOP - just a phase dispatch + the safety stack
 # ─────────────────────────────────────────────────────────────────────────────
 for t in range(TOTAL_ITERATIONS):
     x = r.get_poses()
     xi = x[:2, :]
-    dxi = np.zeros((2, N))
 
-    # ============================================================
-    # PHASE 1: DISTRESS SIGNAL  (0..8 s)
-    # ============================================================
-    if t < PHASE_1_END:
-        dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doctor_home)
+    dxi = select_phase(t)(t, xi)
 
-        offsets = distress_offsets(t, NUM_PATIENTS)
-        targets = patient_home + offsets
-        for i in range(NUM_PATIENTS):
-            targets[:, i] = clamp_to_arena(targets[:, i])
-        dxi[:, NUM_DOCTORS:] = si_position_controller(xi[:, NUM_DOCTORS:], targets)
-
-    # ============================================================
-    # PHASE 2: DISPATCH & TRIAGE SWEEP  (8..20 s)
-    # ============================================================
-    elif t < PHASE_2_END:
-        progress = (t - PHASE_1_END) / (PHASE_2_END - PHASE_1_END)
-
-        if progress < DISPERSION_FRACTION:
-            # Mutual-repulsion dispersion across the arena
-            doc_targets = np.copy(xi[:, :NUM_DOCTORS])
-            for i in range(NUM_DOCTORS):
-                repulsion = np.zeros(2)
-                for j in range(NUM_DOCTORS):
-                    if i == j:
-                        continue
-                    diff = xi[:, i] - xi[:, j]
-                    d = max(np.linalg.norm(diff), 0.01)
-                    repulsion += diff / (d**2)
-                rn = np.linalg.norm(repulsion)
-                if rn > 0:
-                    repulsion = repulsion / rn * DISPERSION_GAIN
-                doc_targets[:, i] = clamp_to_arena(xi[:, i] + repulsion)
-            dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doc_targets)
-        else:
-            # Greedy nearest-neighbor assignment + intercept
-            assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
-            for d_idx, p_idx in assignment.items():
-                g_pat = NUM_DOCTORS + p_idx
-                target = xi[:, g_pat].reshape(2, 1)
-                dxi[:, d_idx : d_idx + 1] = si_position_controller(
-                    xi[:, d_idx].reshape(2, 1), target
-                )
-
-        # Patient distress damps linearly 1.0 -> 0.2
-        damping = max(0.2, 1.0 - 0.8 * progress)
-        offsets = distress_offsets(t, NUM_PATIENTS) * damping
-        targets = patient_home + offsets
-        for i in range(NUM_PATIENTS):
-            targets[:, i] = clamp_to_arena(targets[:, i])
-        dxi[:, NUM_DOCTORS:] = si_position_controller(xi[:, NUM_DOCTORS:], targets)
-
-    # ============================================================
-    # PHASE 3: TREATMENT & STABILIZATION  (20..38 s)
-    # ============================================================
-    elif t < PHASE_3_END:
-        assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
-
-        # Doctors orbit their assigned patient
-        for d_idx, p_idx in assignment.items():
-            g_pat = NUM_DOCTORS + p_idx
-            center = xi[:, g_pat]
-            angle = ORBIT_RATE * t + d_idx * (2 * np.pi / NUM_DOCTORS)
-            orb = center + ORBIT_RADIUS * np.array([np.cos(angle), np.sin(angle)])
-            orb = clamp_to_arena(orb)
-            dxi[:, d_idx : d_idx + 1] = si_position_controller(
-                xi[:, d_idx].reshape(2, 1), orb.reshape(2, 1)
-            )
-
-        # Claimed patients hold position
-        for p_idx in claimed:
-            g_pat = NUM_DOCTORS + p_idx
-            dxi[:, g_pat] = np.zeros(2)
-
-        # Unclaimed patients flock to the nearest cluster centroid
-        unclaimed = set(range(NUM_PATIENTS)) - claimed
-        if len(assignment) > 0:
-            centers = []
-            for d_idx, p_idx in assignment.items():
-                g_pat = NUM_DOCTORS + p_idx
-                centers.append(0.5 * (xi[:, d_idx] + xi[:, g_pat]))
-            centers = np.array(centers).T
-
-            for p_local in unclaimed:
-                g_pat = NUM_DOCTORS + p_local
-                pos = xi[:, g_pat]
-                dists = np.linalg.norm(centers - pos.reshape(2, 1), axis=0)
-                nearest = int(np.argmin(dists))
-                target = centers[:, nearest]
-
-                if dists[nearest] > FLOCK_STOP_DIST:
-                    vel = si_position_controller(pos.reshape(2, 1), target.reshape(2, 1))
-                    dxi[:, g_pat : g_pat + 1] = vel * 0.7
-                else:
-                    dxi[:, g_pat] = np.zeros(2)
-
-    # ============================================================
-    # PHASE 4: EVACUATION CONVOY  (38..50 s)
-    # ============================================================
-    elif t < PHASE_4_END:
-        progress = (t - PHASE_3_END) / (PHASE_4_END - PHASE_3_END)
-        center = np.array([0.0, 0.0])
-
-        assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
-
-        # Doctors lead from the front
-        for d_idx, p_idx in assignment.items():
-            g_pat = NUM_DOCTORS + p_idx
-            pat_pos = xi[:, g_pat]
-            blend = 0.3 + 0.5 * progress
-            doc_target = (1 - blend) * pat_pos + blend * center
-
-            direction = center - pat_pos
-            dn = np.linalg.norm(direction)
-            if dn > 0.01:
-                doc_target = doc_target + LEAD_OFFSET * (direction / dn)
-
-            doc_target = clamp_to_arena(doc_target)
-            dxi[:, d_idx : d_idx + 1] = si_position_controller(
-                xi[:, d_idx].reshape(2, 1), doc_target.reshape(2, 1)
-            )
-
-        # Any unassigned doctor (n_doc <= n_pat so unlikely) heads to center
-        for d_idx in range(NUM_DOCTORS):
-            if d_idx not in assignment:
-                dxi[:, d_idx : d_idx + 1] = si_position_controller(
-                    xi[:, d_idx].reshape(2, 1), center.reshape(2, 1)
-                )
-
-        # All patients converge on the origin
-        for p_local in range(NUM_PATIENTS):
-            g_pat = NUM_DOCTORS + p_local
-            pos = xi[:, g_pat]
-            blend = 0.2 + 0.6 * progress
-            target = (1 - blend) * pos + blend * center
-            target = clamp_to_arena(target)
-            dxi[:, g_pat : g_pat + 1] = si_position_controller(
-                pos.reshape(2, 1), target.reshape(2, 1)
-            )
-
-    # ============================================================
-    # PHASE 5: RECOVERY FORMATION  (50..60 s)
-    # ============================================================
-    else:
-        for i in range(N):
-            dxi[:, i : i + 1] = si_position_controller(
-                xi[:, i].reshape(2, 1), final_ring[:, i].reshape(2, 1)
-            )
-
-    # ────────────────────────────────────────────────────────────
     # SAFETY: barrier certificates + SI -> unicycle conversion
-    # ────────────────────────────────────────────────────────────
     dxi = si_barrier_cert(dxi, x[:2, :])
     dxu = si_to_uni_dyn(dxi, x)
     r.set_velocities(np.arange(N), dxu)
