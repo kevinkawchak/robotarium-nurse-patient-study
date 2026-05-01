@@ -7,28 +7,83 @@
   16 GRITSBots - 6 Doctors (indices 0-5) and 10 Patients (indices 6-15)
   demonstrate emergent swarm-based triage and medical response.
 
-  This is the v2b refresh of Exp_01a_12Feb26.py. The prior script capped the
-  single-integrator velocity at 0.12 m/s, which made every phase finish ~3x
-  slower than the AI-narrated timeline. v2b commands at the GRITSBot maximums
-  published by GA Tech:
+  MOTIVATION
+    Exp_01a_12Feb26.py capped the single-integrator velocity at 0.12 m/s,
+    which made every phase finish ~3x slower than the AI-narrated timeline.
+    v2b commands at the GRITSBot maximums published by GA Tech:
 
-      linear  : 0.20 m/s  (20 cm/s)
-      angular : pi rad/s  (Robotarium hard clip; physical bot ~3.6 rad/s)
+        linear  : 0.20 m/s  (20 cm/s)
+        angular : pi rad/s  (Robotarium hard clip; physical bot ~3.6 rad/s)
 
-  TIMELINE (1800 iterations @ 30 Hz = 60 s wall-clock)
-    [0-8 s]   PHASE 1 - DISTRESS SIGNAL
-    [8-20 s]  PHASE 2 - DISPATCH & TRIAGE SWEEP
-    [20-38 s] PHASE 3 - TREATMENT & STABILIZATION
-    [38-50 s] PHASE 4 - EVACUATION CONVOY
-    [50-60 s] PHASE 5 - RECOVERY FORMATION
+    All controllers, barrier certificates and SI->unicycle transforms route
+    through these caps so the run reaches its narrated wall-clock instead of
+    being silently clipped to 60% speed.
 
-  EMERGENT BEHAVIOURS
+  STEP-BY-STEP TIMELINE  (1800 iterations @ 30 Hz = 60 s wall-clock)
+  ──────────────────────────────────────────────────────────────────────────
+  PHASE 1 - DISTRESS SIGNAL  (0..8 s)
+    * t = 0.0 s  - sim spawns. 6 doctors hold a 2x3 grid on the left wall
+                   ("hospital base"). 10 patients sit in a 4-2-4 scatter on
+                   the right side of the arena.
+    * t = 0.5 s  - patients begin small-amplitude oscillations (1.8 cm,
+                   0.05 Hz) simulating medical distress.
+    * t = 4.0 s  - distress oscillation is at full amplitude. Doctors still
+                   holding formation, motors idle.
+    * t = 8.0 s  - phase ends. Doctors stationary; all patients oscillating.
+
+  PHASE 2 - DISPATCH & TRIAGE SWEEP  (8..20 s)
+    * t =  8.0 s - doctors break formation. Mutual-repulsion dispersion
+                   spreads them across the arena (self-organized coverage).
+    * t = 12.5 s - repulsion phase ends; greedy nearest-neighbor matcher
+                   assigns each of the 6 doctors its closest unclaimed
+                   patient (decentralized task allocation).
+    * t = 12.5..20.0 s
+                 - doctors translate at the 0.20 m/s cap toward the
+                   assigned patient. Distress amplitude damps linearly
+                   1.0 -> 0.2 as help arrives.
+    * t = 20.0 s - every doctor is within ~0.30 m of its assigned patient.
+
+  PHASE 3 - TREATMENT & STABILIZATION  (20..38 s)
+    * t = 20..30 s - doctors orbit their assigned patient at radius 0.25 m
+                     (active treatment). Claimed patients hold position.
+    * t = 20..30 s - the 4 unclaimed patients flock toward the nearest
+                     doctor-patient cluster centroid (emergent triage
+                     groups self-organize without a central planner).
+    * t = 30..38 s - clusters stabilize; unclaimed patients halt at
+                     >= 0.32 m so they don't collide with the orbit.
+
+  PHASE 4 - EVACUATION CONVOY  (38..50 s)
+    * t = 38..44 s - every cluster begins a coordinated translation toward
+                     the arena origin (the projected logo). Doctors lead
+                     from the front by a +0.12 m offset along the travel
+                     direction (convoy formation).
+    * t = 44..50 s - convoy compresses as it nears the origin. Assignments
+                     refresh each iteration so the closest doctor stays
+                     paired with its patient.
+
+  PHASE 5 - RECOVERY FORMATION  (50..60 s)
+    * t = 50..58 s - all 16 robots converge to evenly-spaced points on a
+                     ring of radius 0.65 m centered on the origin
+                     (symmetric consensus).
+    * t = 58..60 s - ring is fully formed; small final corrections only.
+  ──────────────────────────────────────────────────────────────────────────
+
+  EMERGENT BEHAVIOURS DEMONSTRATED
     1. Self-organized spatial coverage (mutual-repulsion dispersion)
     2. Decentralized task allocation (greedy nearest-neighbor matching)
     3. Orbiting / shepherding (doctor-patient interaction)
     4. Flocking & attraction (unassigned patients cluster to groups)
     5. Convoy formation & collective migration
     6. Symmetric consensus formation (final ring)
+
+  ROBOTARIUM SUBMISSION COMPLIANCE
+    * Robot count: 16 (within the 20-robot fleet maximum).
+    * Run-time: 1800 iterations ~= 60 s (well under the 600 s server cap).
+    * Min initial spacing: 0.35 m (Robotarium needs >= 0.30 m).
+    * Linear cap: 0.20 m/s; angular cap: pi rad/s - matches platform spec.
+    * Barrier certificate: safety_radius=0.17 with magnitude_limit=0.20.
+    * Imports: only numpy and rps.* - no scipy, cvxopt, or external pkgs.
+    * Public API only: get_poses, set_velocities, step, call_at_scripts_end.
 ================================================================================
 """
 
