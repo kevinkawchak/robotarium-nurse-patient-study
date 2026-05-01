@@ -132,12 +132,8 @@ FLOCK_STOP_DIST = 0.32
 doctor_x = np.array([-1.30, -1.30, -1.30, -0.95, -0.95, -0.95])
 doctor_y = np.array([0.55, 0.00, -0.55, 0.55, 0.00, -0.55])
 
-patient_x = np.array(
-    [-0.20, 0.30, 0.80, 1.30, 0.30, 0.80, -0.20, 0.30, 0.80, 1.30]
-)
-patient_y = np.array(
-    [0.65, 0.65, 0.65, 0.65, 0.00, 0.00, -0.65, -0.65, -0.65, -0.65]
-)
+patient_x = np.array([-0.20, 0.30, 0.80, 1.30, 0.30, 0.80, -0.20, 0.30, 0.80, 1.30])
+patient_y = np.array([0.65, 0.65, 0.65, 0.65, 0.00, 0.00, -0.65, -0.65, -0.65, -0.65])
 
 initial_conditions = np.array(
     [
@@ -175,6 +171,7 @@ si_position_controller = ctl.create_si_position_controller(
     y_velocity_gain=1.2,
     velocity_magnitude_limit=MAX_LINEAR_SPEED,
 )
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPER FUNCTIONS (numpy-only — no scipy dependency)
@@ -256,9 +253,7 @@ for t in range(TOTAL_ITERATIONS):
     # PHASE 1: DISTRESS SIGNAL  (0–8 s)
     # =================================================================
     if t < PHASE_1_END:
-        dxi[:, :NUM_DOCTORS] = si_position_controller(
-            xi[:, :NUM_DOCTORS], doctor_home
-        )
+        dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doctor_home)
 
         offsets = distress_offsets(t, NUM_PATIENTS)
         targets = patient_home + offsets
@@ -287,14 +282,10 @@ for t in range(TOTAL_ITERATIONS):
                 if rn > 0:
                     repulsion = repulsion / rn * 0.40
                 doc_targets[:, i] = clamp_to_arena(xi[:, i] + repulsion)
-            dxi[:, :NUM_DOCTORS] = si_position_controller(
-                xi[:, :NUM_DOCTORS], doc_targets
-            )
+            dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doc_targets)
         else:
             # Greedy nearest-neighbor assignment + intercept
-            assignment, claimed = greedy_assignment(
-                xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
-            )
+            assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
             for d_idx, p_idx in assignment.items():
                 g_pat = NUM_DOCTORS + p_idx
                 target = xi[:, g_pat].reshape(2, 1)
@@ -314,9 +305,7 @@ for t in range(TOTAL_ITERATIONS):
     # PHASE 3: TREATMENT & STABILIZATION  (20–38 s)
     # =================================================================
     elif t < PHASE_3_END:
-        assignment, claimed = greedy_assignment(
-            xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
-        )
+        assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
 
         # Doctors orbit their assigned patient
         orbit_speed = 0.06  # rad/iter — scaled up for 0.20 m/s top speed
@@ -352,9 +341,7 @@ for t in range(TOTAL_ITERATIONS):
                 target = centers[:, nearest]
 
                 if dists[nearest] > FLOCK_STOP_DIST:
-                    vel = si_position_controller(
-                        pos.reshape(2, 1), target.reshape(2, 1)
-                    )
+                    vel = si_position_controller(pos.reshape(2, 1), target.reshape(2, 1))
                     dxi[:, g_pat : g_pat + 1] = vel * 0.7
                 else:
                     dxi[:, g_pat] = np.zeros(2)
@@ -366,9 +353,7 @@ for t in range(TOTAL_ITERATIONS):
         progress = (t - PHASE_3_END) / (PHASE_4_END - PHASE_3_END)
         center = np.array([0.0, 0.0])
 
-        assignment, claimed = greedy_assignment(
-            xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
-        )
+        assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
 
         # Doctors lead from the front
         for d_idx, p_idx in assignment.items():
