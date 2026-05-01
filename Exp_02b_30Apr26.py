@@ -211,9 +211,12 @@ def greedy_assignment(doc_pos, pat_pos):
 
     Each iteration picks the globally smallest doctor->patient distance via
     a single np.argmin, then masks that row + column. No Python triple-loop.
+    Returns ({}, set()) if either fleet is empty so callers can fall back.
     """
     n_doc = doc_pos.shape[1]
     n_pat = pat_pos.shape[1]
+    if n_doc == 0 or n_pat == 0:
+        return {}, set()
 
     dx = doc_pos[0, :, None] - pat_pos[0, None, :]
     dy = doc_pos[1, :, None] - pat_pos[1, None, :]
@@ -251,6 +254,10 @@ final_ring = ring_formation(N, center=np.array([0.0, 0.0]), radius=RING_RADIUS)
 
 assignment = {}
 claimed = set()
+# True once phase 2's dispersion handed off to the intercept sub-phase. While
+# this flag is set, phase 3 reuses the same matching every tick so a doctor
+# already orbiting a patient never gets reshuffled to a different one mid-run.
+assignment_locked = False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -291,15 +298,23 @@ def _doctor_dispersion_targets(xi):
 
 def phase2_dispatch(t, xi):
     """8..20s: doctors disperse then sprint to greedily-matched patients."""
-    global assignment, claimed
+    global assignment, claimed, assignment_locked
     dxi = np.zeros((2, N))
     progress = (t - PHASE_1_END) / (PHASE_2_END - PHASE_1_END)
 
     if progress < DISPERSION_FRACTION:
         doc_targets = _doctor_dispersion_targets(xi)
         dxi[:, :NUM_DOCTORS] = si_position_controller(xi[:, :NUM_DOCTORS], doc_targets)
+        assignment_locked = False
     else:
-        assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
+        # Compute the matching once at the dispersion -> intercept handoff and
+        # reuse it for the rest of phase 2 + all of phase 3 so a doctor
+        # already steering toward patient P never gets bounced to patient Q.
+        if not assignment_locked:
+            assignment, claimed = greedy_assignment(
+                xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
+            )
+            assignment_locked = True
         for d_idx, p_idx in assignment.items():
             g_pat = NUM_DOCTORS + p_idx
             dxi[:, d_idx : d_idx + 1] = si_position_controller(
@@ -315,9 +330,14 @@ def phase2_dispatch(t, xi):
 
 def phase3_treatment(t, xi):
     """20..38s: doctors orbit patients, unclaimed patients flock to clusters."""
-    global assignment, claimed
+    global assignment, claimed, assignment_locked
     dxi = np.zeros((2, N))
-    assignment, claimed = greedy_assignment(xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:])
+    # Reuse phase 2's matching unless we somehow arrived without one.
+    if not assignment_locked or not assignment:
+        assignment, claimed = greedy_assignment(
+            xi[:, :NUM_DOCTORS], xi[:, NUM_DOCTORS:]
+        )
+        assignment_locked = True
 
     # Doctors orbit their assigned patient
     for d_idx, p_idx in assignment.items():
@@ -417,6 +437,13 @@ def select_phase(t):
     return phase5_recovery
 
 
+# Below this magnitude (m/s) the SI command is treated as "stop" and the
+# unicycle command is forced to zero. Without this guard, claimed patients
+# in phase 3 (dxi == 0) would still receive a heading-error torque from
+# si_to_uni_dyn (arctan2(0, 0) = 0 desired heading) and spin in place.
+SI_STOP_THRESHOLD = 1e-4
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN LOOP - just a phase dispatch + the safety stack
 # ─────────────────────────────────────────────────────────────────────────────
@@ -429,6 +456,13 @@ for t in range(TOTAL_ITERATIONS):
     # SAFETY: barrier certificates + SI -> unicycle conversion
     dxi = si_barrier_cert(dxi, x[:2, :])
     dxu = si_to_uni_dyn(dxi, x)
+
+    # Zero-velocity guard: stop the wheels (v=0, omega=0) for any robot whose
+    # SI command rounds to zero, so it doesn't pirouette toward heading 0.
+    stopped = np.linalg.norm(dxi, axis=0) < SI_STOP_THRESHOLD
+    if np.any(stopped):
+        dxu[:, stopped] = 0.0
+
     r.set_velocities(np.arange(N), dxu)
     r.step()
 
