@@ -1,5 +1,44 @@
 # Changelog
 
+## v0.4.0 - 10Runs_11Jun26: Ten-Algorithm Doctor/Nurse/Patient Suite
+
+### Added
+
+**Experiment suite (`10Runs_11Jun26/`)**
+- Ten new standalone Robotarium experiment scripts, each pairing a unique doctor/nurse/patient fleet mix (10-16 robots) with a different algorithm family and clinical-trial objective:
+  - `Run01_SwarmIntake_11Jun26.py` - boids flocking + shepherding intake (2D/4N/8P, 150 s).
+  - `Run02_GeneticPairing_11Jun26.py` - genetic algorithm care-team pairing (3D/5N/8P, 180 s).
+  - `Run03_DifferentialWard_11Jun26.py` - differential evolution ward layout (4D/4N/8P, 210 s).
+  - `Run04_PSODoseSearch_11Jun26.py` - embodied PSO dose-response search (2D/3N/5P, 150 s).
+  - `Run05_AntColonyMeds_11Jun26.py` - ant colony medication rounds (1D/4N/6P, 195 s).
+  - `Run06_ConsensusVitals_11Jun26.py` - ferry-driven vitals consensus (3D/4N/9P, 165 s).
+  - `Run07_AuctionTriage_11Jun26.py` - market-based auction triage pipeline (2D/5N/9P, 240 s).
+  - `Run08_PotentialIsolation_11Jun26.py` - potential-field isolation ward (3D/3N/6P, 180 s).
+  - `Run09_AnnealingBeds_11Jun26.py` - simulated annealing bed reassignment (2D/4N/7P, 165 s).
+  - `Run10_ConvoyDischarge_11Jun26.py` - leader-follower discharge convoys (1D/3N/6P, 210 s).
+- Per-role LED state machines (doctors blue, nurses green/violet, patients red-amber-green) updating every iteration, with run-specific signals (temperature gauge, acuity blink rates, convoy blink signatures, consensus hue equalization) and a shared 15 s standby/role-announce sequence.
+- Step-by-step expected-time bullet timelines, documented emergent behaviors, and live printed metrics in every script docstring.
+- Shared compliance core: SI barrier certificates with boundary, single `get_poses()` per `step()`, >= 0.36 m start spacing asserts, derated planning speeds (0.14 m/s / 1.8 rad/s), wheel-speed budget rescaling with float-safe margin, zero-velocity spin guard, white arena background, and `call_at_scripts_end()`/`debug()` end hooks.
+- Runtime rps API resolver (short-form server names + long-form repo-stub names), LED shim for `set_left_leds`/`set_right_leds`/fork LED array, and repo-root path bootstrap.
+- Local pre-flight knobs `RNPS_FAST_SIM=1` and `RNPS_MAX_ITERS` (ignored on the Robotarium server).
+
+**Documentation**
+- README v0.4.0 section: run catalog table, suite architecture diagram, repository structure, and pre-flight instructions.
+- `docs/simulator.md` v0.4.0 section and comparison table.
+- New `releases/v0.4.0.md` release notes.
+
+### Changed
+- `changelog.md`: added v0.4.0 entry.
+- `README.md`: restructured top section around the v0.4.0 suite; updated experiments and quick-start sections.
+- Second-to-last commit of the release applies optimizations and bug fixes from the first full simulator pass: wheel-budget float margin on Run01/Run02, Run04 hidden-field reshaping (decoy escape demonstrated) and 0.23 m safety radius, Run05 pheromone gains + tour-concentration metric, Run01 flocking-gain revert with measured polarization narrative.
+
+### Compatibility
+- All ten scripts verified twice end-to-end in the GTERNAL fork of `robotarium_python_simulator` (initialization phase included): "No errors or warnings in your simulation! Your script will run on the Robotarium!" for every run.
+- Scripts also import-resolve against the repo-local `rps` stub and the Robotarium production server API names unchanged.
+- `main.py` and `Exp_01a_12Feb26.py` CI smoke tests unaffected; all files pass ruff lint + format for Python 3.10, 3.11, 3.12.
+
+---
+
 ## v0.3.1 - Dual-Experiment Simulator + CI Hardening
 
 ### Added

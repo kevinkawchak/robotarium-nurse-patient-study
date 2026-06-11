@@ -1,6 +1,30 @@
-# Simulator Design (v0.3.1)
+# Simulator Design (v0.4.0)
 
-The v0.3.1 simulator provides full API parity with the official `robotarium_python_simulator` while running entirely in-browser via Pyodide or locally with only NumPy. The v3.1 web interface adds an experiment selector for switching between the 2-robot nurse-patient and 14-robot swarm experiments.
+The bundled simulator provides full API parity with the official `robotarium_python_simulator` while running entirely in-browser via Pyodide or locally with only NumPy. The v3.1 web interface adds an experiment selector for switching between the 2-robot nurse-patient and 14-robot swarm experiments.
+
+## v0.4.0 - 10Runs_11Jun26 Experiment Suite
+
+v0.4.0 adds ten standalone doctor/nurse/patient experiments (`10Runs_11Jun26/Run01..Run10`) that exercise the rps API across ten algorithm families. The scripts are dual-environment by construction:
+
+- **API resolver:** barrier-certificate factories are looked up under both the production-server short-form name (`create_si_barrier_certificate_with_boundary`) and this repo's long-form stub name (`create_single_integrator_barrier_certificate_with_boundary`), the same pattern Exp_02c established.
+- **LED shim:** per-role LED commands (0-255 RGB, 3xN) are routed to `set_left_leds`/`set_right_leds` where the API exposes them (production server, repo stub) and to the GTERNAL fork simulator's LED array otherwise, so role colors render in every environment.
+- **End hooks:** both `call_at_scripts_end()` (classic API) and `debug()` (GTERNAL fork validator report) are called when present.
+- **Safety stack:** SI barrier certificate with boundary -> SI-to-unicycle map -> zero-velocity spin guard -> wheel-speed budget rescaling (|2v| + L|w| <= 2 v_max with a 0.1% float margin), with planning caps derated to 0.14 m/s / 1.8 rad/s for real-fleet fidelity.
+- **Pre-flight knobs:** `RNPS_FAST_SIM=1` (headless, unthrottled) and `RNPS_MAX_ITERS` (iteration cap) for local verification; unset on the Robotarium server.
+
+```text
++------------------------------+--------------------------+------------------------------+
+| Feature                      | v0.3.1                   | v0.4.0                       |
++------------------------------+--------------------------+------------------------------+
+| Experiment scripts           | 2 (smoke-tested)         | + 10-run algorithm suite     |
+| Algorithm families covered   | swarm phases             | 10 (GA, DE, PSO, ACO, ...)   |
+| LED usage                    | stub API only            | per-role state machines      |
+| Real-robot derating          | (none)                   | 0.14 m/s, 1.8 rad/s plans    |
+| Fleet start delay handling   | (none)                   | 15 s standby in every run    |
+| Wheel-limit guarantee        | clip in set_velocities   | pre-scaled wheel budget      |
+| Verification flow            | CI smoke tests           | + twice-run GTERNAL fork     |
++------------------------------+--------------------------+------------------------------+
+```
 
 ## Architecture Diagram
 

@@ -17,6 +17,95 @@ Overview
 This repository contains Python scripts and documentation for experiments run on the [Georgia Tech Robotarium](https://www.robotarium.gatech.edu/) - a remotely accessible, $2.5 million swarm robotics research platform funded by the National Science Foundation (NSF) and Office of Naval Research.
 
 
+## v0.4.0 - 10Runs_11Jun26: Ten-Algorithm Doctor/Nurse/Patient Suite
+
+Ten new standalone Robotarium experiments in [`10Runs_11Jun26/`](10Runs_11Jun26/). Each run casts the fleet as a unique mix of **doctors / nurses / patients**, drives a different **algorithm family** against a different **clinical-trial objective**, and tracks every role with a coherent **LED state machine** that updates throughout the real run (doctors blue, nurses green/violet, patients red-amber-green by state). All runs use a white arena, include a 15 s standby head time for the physical fleet, and plan motion at derated real-robot speeds (0.14 m/s linear = 70% of the 20 cm/s max; 1.8 rad/s = 50% of the 3.6 rad/s max). Verified twice end-to-end in the GTERNAL fork simulator with zero errors and zero warnings.
+
+### Run Catalog
+
+| Run | Script | Algorithm pattern | D/N/P | Robots | Duration | Clinical objective |
+|-----|--------|-------------------|-------|--------|----------|--------------------|
+| 01 | `Run01_SwarmIntake_11Jun26.py` | Boids flocking + shepherding | 2/4/8 | 14 | 150 s | Cohort intake crowd-flow |
+| 02 | `Run02_GeneticPairing_11Jun26.py` | Genetic algorithm | 3/5/8 | 16 | 180 s | Care-team assignment |
+| 03 | `Run03_DifferentialWard_11Jun26.py` | Differential evolution | 4/4/8 | 16 | 210 s | Ward layout (facility location) |
+| 04 | `Run04_PSODoseSearch_11Jun26.py` | Particle swarm optimization | 2/3/5 | 10 | 150 s | Dose-response optimum search |
+| 05 | `Run05_AntColonyMeds_11Jun26.py` | Ant colony optimization | 1/4/6 | 11 | 195 s | Medication delivery rounds |
+| 06 | `Run06_ConsensusVitals_11Jun26.py` | Delta-disk graph consensus | 3/4/9 | 16 | 165 s | Vitals reconciliation via ferrying |
+| 07 | `Run07_AuctionTriage_11Jun26.py` | Market-based auctions | 2/5/9 | 16 | 240 s | Triage pipeline throughput |
+| 08 | `Run08_PotentialIsolation_11Jun26.py` | Artificial potential fields | 3/3/6 | 12 | 180 s | Infection-control isolation |
+| 09 | `Run09_AnnealingBeds_11Jun26.py` | Simulated annealing | 2/4/7 | 13 | 165 s | Bed reassignment optimization |
+| 10 | `Run10_ConvoyDischarge_11Jun26.py` | Leader-follower convoys | 1/3/6 | 10 | 210 s | Discharge logistics |
+
+Every script documents a step-by-step expected-time bullet timeline, the emergent behaviors it demonstrates (with live printed metrics: flock polarization, GA churn, DE station drift, PSO basin escapes, pheromone tour concentration, consensus spread, auction load balance, cell-capture conflicts, annealing energy traces, convoy string stability), and a Robotarium compliance block.
+
+### Diagram 0 - 10Runs_11Jun26 Suite Architecture
+
+```text
++--------------------------------------------------------------------------+
+| Run01..Run10 (standalone Robotarium scripts, 10-16 robots each)          |
+|   timeline: 15 s STANDBY (LED system check + role announce)             |
+|             -> algorithm phases (swarm / GA / DE / PSO / ACO /          |
+|                consensus / auction / fields / annealing / convoys)      |
+|             -> hold + LED completion display                            |
++-------------------------------+------------------------------------------+
+                                |
+                                v
++--------------------------------------------------------------------------+
+| Shared compliance core (embedded in every script)                        |
+|   rps API resolver (server short-form <-> repo-stub long-form names)    |
+|   SI barrier certificates w/ boundary  | zero-velocity spin guard       |
+|   derated caps 0.14 m/s / 1.8 rad/s    | wheel-speed budget rescaling   |
+|   LED shim (set_left/right_leds or fork LED array, 0-255 RGB)           |
+|   white arena/figure background        | start spacing >= 0.36 m asserts |
+|   call_at_scripts_end() + debug() end hooks                             |
++-------------------------------+------------------------------------------+
+                                |
+            +-------------------+-------------------+
+            v                                       v
++---------------------------+        +----------------------------------+
+| GTERNAL fork simulator    |        | Robotarium production server     |
+| (robotarium_python_sim)   |        | (real GRITSBot / GTERNAL fleet)  |
+| init-drive phase + QP     |        | 15 s standby covers fleet start; |
+| barriers + validator:     |        | LEDs track roles live; arena     |
+| "No errors or warnings"   |        | white; <= 600 s runtime          |
++---------------------------+        +----------------------------------+
+```
+
+### Repository Structure
+
+```text
+robotarium-nurse-patient-study/
+├── 10Runs_11Jun26/            # v0.4.0: ten-algorithm doctor/nurse/patient suite
+│   ├── Run01_SwarmIntake_11Jun26.py        ... Run10_ConvoyDischarge_11Jun26.py
+├── Exp_01a_12Feb26.py         # 14-robot doctor-patient swarm (CI smoke test)
+├── Exp_02_30Apr26.py          # real-time 16-robot swarm variants
+├── Exp_02b_30Apr26.py
+├── Exp_02c_30Apr26.py         # production-server API-name hardened variant
+├── main.py                    # original 2-robot nurse-patient trial (CI smoke test)
+├── rps/                       # bundled Robotarium-compatible simulator stub
+│   └── utilities/             # controllers, barriers, transformations, misc
+├── docs/                      # GitHub Pages web simulator + design docs
+├── releases/                  # versioned release notes (v0.2.0 ... v0.4.0)
+├── assets/                    # images
+├── changelog.md
+├── pyproject.toml             # ruff lint/format configuration
+└── requirements.txt
+```
+
+### Pre-flight the suite locally
+
+```bash
+# Fast, headless verification against the bundled rps stub (repo root):
+RNPS_FAST_SIM=1 python 10Runs_11Jun26/Run01_SwarmIntake_11Jun26.py
+
+# Full-fidelity verification against the official simulator fork
+# (initialization drive phase + QP barrier certificates + validator):
+PYTHONPATH=/path/to/fork_robotarium_python_simulator \
+  MPLBACKEND=Agg RNPS_FAST_SIM=1 python 10Runs_11Jun26/Run04_PSODoseSearch_11Jun26.py
+```
+
+`RNPS_FAST_SIM=1` disables real-time throttling and the figure for local pre-flight; the Robotarium server never sets it and runs the full real-time script unchanged.
+
 ## v0.3.1 Simulator (Dual-Experiment Support + CI Hardening)
 
 This repository includes a built-in Robotarium-compatible simulator with full API parity against the official `robotarium_python_simulator`:
@@ -159,6 +248,13 @@ a) Exhibits dynamic behavior with varied movements (0:28-1:03), (1:10-1:26) that
 - **Script:** `Exp_01a_12Feb26.py`
 - **Description:** Emergent swarm-based triage and medical response with five phases
 - **Status:** Completed (February 12, 2026)
+
+### 10Runs_11Jun26 - Ten-Algorithm Doctor/Nurse/Patient Suite
+- **Duration:** 150-240 seconds per run (15 s real-fleet standby included)
+- **Robots:** 10-16 GRITSBot/GTERNAL units per run, unique doctor/nurse/patient mixes
+- **Scripts:** `10Runs_11Jun26/Run01_*.py` ... `Run10_*.py` (see the v0.4.0 run catalog above)
+- **Description:** Ten clinical-trial objectives driven by ten algorithm families (swarm, genetic, differential evolution, PSO, ACO, consensus, auctions, potential fields, simulated annealing, leader-follower), with per-role LED tracking, white arena, and derated real-robot speed planning
+- **Status:** Simulator-verified twice (June 11, 2026); zero errors, zero warnings
 
 📹 **Video:** [14 Robot Doctor/Patient Swarm Interactions](https://drive.google.com/file/d/1M97IHiHEKnU3FW8gpx3g1sJBNsatAUEp/view?usp=drivesdk)
 
