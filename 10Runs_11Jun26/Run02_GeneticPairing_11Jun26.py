@@ -349,7 +349,8 @@ def wheel_safe(dxu):
     out[0, :] = np.clip(out[0, :], -PLAN_LINEAR, PLAN_LINEAR)
     out[1, :] = np.clip(out[1, :], -PLAN_ANGULAR, PLAN_ANGULAR)
     demand = 2.0 * np.abs(out[0, :]) + ROBOT_BASE_LENGTH * np.abs(out[1, :])
-    budget = 2.0 * HW_MAX_LINEAR
+    # 0.1% margin so the rescaled command never rounds onto the exact limit.
+    budget = 2.0 * HW_MAX_LINEAR * 0.999
     over = demand > budget
     if np.any(over):
         out[:, over] *= budget / demand[over]

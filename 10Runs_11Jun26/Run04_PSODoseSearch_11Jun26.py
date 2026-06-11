@@ -24,8 +24,10 @@
     Velocity updates every 2 s; samples taken from live robot positions.
 
   HIDDEN FIELD (unknown to the swarm)
-    efficacy(p) = 1.00 * exp(-||p - (0.90, -0.45)||^2 / 0.18)   true peak
-                + 0.55 * exp(-||p - (-0.85, 0.50)||^2 / 0.10)   decoy peak
+    efficacy(p) = 1.00 * exp(-||p - (0.80, -0.25)||^2 / 0.20)   true peak
+                + 0.68 * exp(-||p - (-0.85, 0.60)||^2 / 0.20)   decoy peak
+    The broad decoy sits beside two lattice posts, so the swarm's FIRST
+    gbest lands in the decoy basin and must be escaped.
 
   REAL-ROBOT TIMING ASSUMPTIONS
     * 15 s standby head time before tasks begin (real fleet start delay).
@@ -41,16 +43,18 @@
   PHASE 1 - SEARCH LATTICE (15..25 s)
     * t = 15 s  - the 8 particles fan out to a seeded lattice covering the
                   arena; doctors take posts near the center line.
-    * t = 25 s  - lattice reached; first field samples taken; initial
-                  gbest printed.
+    * t = 25 s  - lattice reached; first field samples taken. The broad
+                  decoy beside the two western posts wins the opening
+                  samples: the initial gbest lands in the DECOY basin
+                  (basin print).
   PHASE 2 - PSO SEARCH (25..105 s; velocity update every 2 s, 40 steps)
-    * t = 25-45 s  - high-inertia exploration: particles overshoot, orbit,
-                  and trade pbest/gbest information; some particles climb
-                  the decoy peak (LED amber).
-    * t ~ 45-70 s - the true peak's larger basin wins the gbest race;
-                  decoy-trapped particles get pulled back out (emergent
-                  escape, printed when gbest jumps basins).
-    * t = 70-105 s - inertia anneals; swarm contracts around the true
+    * t ~ 25-30 s - DECOY ESCAPE: a particle whose personal best anchors
+                  it near the true basin samples above the decoy ceiling
+                  and the gbest jumps basins (second basin print).
+    * t ~ 30-60 s - high-inertia exploration: western particles peel off
+                  the decoy as the social term drags them across the
+                  arena; gbest climbs 0.86 -> 1.00.
+    * t = 60-105 s - inertia anneals; swarm contracts around the true
                   optimum; gbest efficacy printed every 10 s.
   PHASE 3 - SITE VERIFICATION (105..130 s)
     * t = 105 s - doctors travel to flank the gbest site at +/-0.35 m
@@ -87,7 +91,7 @@
   ROBOTARIUM SUBMISSION COMPLIANCE
     * 10 robots (max 20); 150 s run (max 600 s); min start spacing 0.36 m.
     * get_poses() exactly once per step(); ends with the platform hook.
-    * Barrier certificates keep inter-robot distance >= 0.20 m and robots
+    * Barrier certificates keep inter-robot distance >= 0.23 m and robots
       inside [-1.6, 1.6] x [-1.0, 1.0]. Arena/figure forced white.
     * Imports: numpy + rps only.
     * RNPS_FAST_SIM=1 / RNPS_MAX_ITERS are local pre-flight knobs only.
@@ -167,14 +171,16 @@ INERTIA_HI = 0.9
 INERTIA_LO = 0.4
 PSO_VMAX = 0.55  # m per update step (pre-scaling), caps particle jumps
 
-# Hidden efficacy field: true peak + decoy peak.
-TRUE_PEAK = np.array([0.90, -0.45])
-DECOY_PEAK = np.array([-0.85, 0.50])
-TRUE_W = 0.18
-DECOY_W = 0.10
-DECOY_H = 0.55
+# Hidden efficacy field: a narrow true peak set BETWEEN lattice posts and a
+# broad decoy peak right next to two posts, so the swarm's first samples favor
+# the decoy and the true optimum must be discovered by escaping it.
+TRUE_PEAK = np.array([0.80, -0.25])
+DECOY_PEAK = np.array([-0.85, 0.60])
+TRUE_W = 0.20
+DECOY_W = 0.20
+DECOY_H = 0.68
 
-SAFETY_RADIUS = 0.20
+SAFETY_RADIUS = 0.23  # extra margin: PSO jumps produce close crossings
 ARENA = np.array([-1.6, 1.6, -1.0, 1.0])
 MARGIN = 0.15
 

@@ -20,7 +20,7 @@
   ALGORITHM PATTERN: ant colony optimization on the 6-bed tour graph.
     Edge choice probability ~ tau^alpha * (1/d)^beta * urgency^gamma with
     alpha=1.0, beta=2.2, gamma=1.5; pheromone deposit Q/d on completed
-    legs; continuous evaporation rho=0.02/s; per-bed reservations stop
+    legs; continuous evaporation rho=0.012/s; per-bed reservations stop
     two ants converging on one bed.
 
   REAL-ROBOT TIMING ASSUMPTIONS
@@ -51,8 +51,8 @@
                   white; pheromone accumulates on short, frequently-needed
                   legs. Ward status printed every 30 s.
     * t ~ 90-150 s - exploitation: dominant pheromone edges form stable
-                  delivery circuits (top edge share printed); average bed
-                  wait time drops.
+                  delivery circuits (tour concentration printed; uniform
+                  spread = 0.40); average bed wait time drops.
     * t = 150-180 s - steady-state rounds; escalations become rare since
                   the learned circuits keep every level above critical.
   PHASE 3 - END OF SHIFT (180..195 s)
@@ -63,9 +63,9 @@
   ----------------------------------------------------------------------------
 
   EMERGENT BEHAVIORS DEMONSTRATED (printed as metrics during the run)
-    1. Stigmergic route learning: pheromone concentration (top-edge share)
-       grows while average medication wait time falls - no nurse ever
-       plans a tour.
+    1. Stigmergic route learning: tour concentration (pheromone share of
+       the 6 strongest edges; uniform = 0.40) grows toward a dominant
+       delivery circuit while no nurse ever plans a tour.
     2. Load balancing: per-nurse delivery counts stay within ~2 of each
        other purely through reservations + urgency weighting.
     3. Supervisor escalation: the doctor's red-pulse interventions emerge
@@ -157,8 +157,8 @@ T_SHIFT_END = sec(180.0)
 ACO_ALPHA = 1.0
 ACO_BETA = 2.2
 ACO_GAMMA = 1.5  # urgency exponent
-ACO_RHO = 0.02  # pheromone evaporation per second
-ACO_Q = 0.6  # deposit scale (tau += Q / leg_length)
+ACO_RHO = 0.012  # pheromone evaporation per second
+ACO_Q = 1.2  # deposit scale (tau += Q / leg_length)
 TAU_FLOOR = 0.05
 RESTOCK_BELOW = 0.75  # beds below this level request a dose
 MED_DECAY = 0.012  # level units per second
@@ -351,10 +351,16 @@ def choose_next_bed(k, t_sec):
     return needy[pick]
 
 
-def top_edge_share():
-    """Share of total pheromone held by the strongest edge (i<j)."""
-    upper = tau[np.triu_indices(NUM_PATIENTS, k=1)]
-    return float(upper.max() / max(upper.sum(), 1e-9))
+def tour_concentration():
+    """Share of total pheromone held by the 6 strongest edges (one full tour).
+
+    A single dominant edge cannot exceed ~1/6 of the total in healthy
+    operation (every complete round deposits on 6 edges), so concentration
+    is measured at tour granularity: 6 of the 15 graph edges. Uniform
+    spread gives 0.40; a fully converged circuit approaches 1.0.
+    """
+    upper = np.sort(tau[np.triu_indices(NUM_PATIENTS, k=1)])[::-1]
+    return float(upper[:6].sum() / max(upper.sum(), 1e-9))
 
 
 # ----------------------------------------------------------------------------
@@ -502,7 +508,7 @@ for t in range(min(TOTAL_ITERATIONS, _ITER_CAP)):
             lv = " ".join(f"{v:.2f}" for v in med_level)
             print(
                 f"[t={t_sec:5.1f}s] levels [{lv}] deliveries={deliveries_total} "
-                f"per-nurse={nurse_deliveries} top-edge={top_edge_share():.2f} "
+                f"per-nurse={nurse_deliveries} tour-conc={tour_concentration():.2f} "
                 f"escalations={escalations}"
             )
 
@@ -521,7 +527,7 @@ mean_wait = wait_accum / max(TOTAL_SECONDS - 15.0, 1.0)
 print(
     f"Run05 complete: {deliveries_total} deliveries {nurse_deliveries}, "
     f"{escalations} escalations, mean beds-awaiting={mean_wait:.2f}, "
-    f"top pheromone edge share={top_edge_share():.2f}"
+    f"tour concentration={tour_concentration():.2f} (uniform = 0.40)"
 )
 
 _end_hook = getattr(r, "call_at_scripts_end", None)
