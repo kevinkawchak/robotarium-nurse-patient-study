@@ -2,25 +2,6 @@
 
 [**Run the Web Simulator**](https://kevinkawchak.github.io/robotarium-nurse-patient-study/) — select 2-robot or 14-robot experiment, press Play (no install required)
 
-Remote robotics experiments conducted on Georgia Tech's Robotarium platform using GRITSBots. (Nurse patient study shown below)
-
-📹 **New Video 13Feb26:** [14 Robot Doctor/Patient Swarm Interactions](https://drive.google.com/file/d/1M97IHiHEKnU3FW8gpx3g1sJBNsatAUEp/view?usp=drivesdk)
-
----
-
-<picture>
-  <img src="assets/robotarium-nurse-patient-study.jpg" alt=”Main”>
-</picture>
-
-Overview
-
-This repository contains Python scripts and documentation for experiments run on the [Georgia Tech Robotarium](https://www.robotarium.gatech.edu/) - a remotely accessible, $2.5 million swarm robotics research platform funded by the National Science Foundation (NSF) and Office of Naval Research.
-
-
-## v0.4.0 - 10Runs_11Jun26: Ten-Algorithm Doctor/Nurse/Patient Suite
-
-Ten new standalone Robotarium experiments in [`10Runs_11Jun26/`](10Runs_11Jun26/). Each run casts the fleet as a unique mix of **doctors / nurses / patients**, drives a different **algorithm family** against a different **clinical-trial objective**, and tracks every role with a coherent **LED state machine** that updates throughout the real run (doctors blue, nurses green/violet, patients red-amber-green by state). All runs use a white arena, include a 15 s standby head time for the physical fleet, and plan motion at derated real-robot speeds (0.14 m/s linear = 70% of the 20 cm/s max; 1.8 rad/s = 50% of the 3.6 rad/s max). Verified twice end-to-end in the GTERNAL fork simulator with zero errors and zero warnings.
-
 ### Run Catalog
 
 | Run | Script | Algorithm pattern | D/N/P | Robots | Duration | Clinical objective |
@@ -37,6 +18,25 @@ Ten new standalone Robotarium experiments in [`10Runs_11Jun26/`](10Runs_11Jun26/
 | 10 | `Run10_ConvoyDischarge_11Jun26.py` | Leader-follower convoys | 1/3/6 | 10 | 210 s | Discharge logistics |
 
 Every script documents a step-by-step expected-time bullet timeline, the emergent behaviors it demonstrates (with live printed metrics: flock polarization, GA churn, DE station drift, PSO basin escapes, pheromone tour concentration, consensus spread, auction load balance, cell-capture conflicts, annealing energy traces, convoy string stability), and a Robotarium compliance block.
+
+📹 **New Video 13Feb26:** [14 Robot Doctor/Patient Swarm Interactions](https://drive.google.com/file/d/1M97IHiHEKnU3FW8gpx3g1sJBNsatAUEp/view?usp=drivesdk)
+
+---
+
+<picture>
+  <img src="assets/robotarium-nurse-patient-study.jpg" alt=”Main”>
+</picture>
+
+Overview
+
+This repository contains Python scripts and documentation for experiments run on the [Georgia Tech Robotarium](https://www.robotarium.gatech.edu/) - a remotely accessible, $2.5 million swarm robotics research platform funded by the National Science Foundation (NSF) and Office of Naval Research.
+
+
+## v0.4.0 - 10Runs_11Jun26: Ten-Algorithm Doctor/Nurse/Patient Suite
+
+Ten new standalone Robotarium experiments in [`10Runs_11Jun26/`](10Runs_11Jun26/). Each run casts the fleet as a unique mix of **doctors / nurses / patients**, drives a different **algorithm family** against a different **clinical-trial objective**, and tracks every role with a coherent **LED state machine** that updates throughout the real run (doctors blue, nurses green/violet, patients red-amber-green by state). 
+
+
 
 ### Diagram 0 - 10Runs_11Jun26 Suite Architecture
 
