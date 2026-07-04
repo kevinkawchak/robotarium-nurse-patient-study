@@ -1,0 +1,14 @@
+/usr/local/lib/python3.10/dist-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] [1781725492.401950845] [robotarium]: Initializing 11 robots to initial conditions...
+[INFO] [1781725550.650807104] [robotarium]: At initial conditions... Starting Experiment
+[INFO] [1781725551.155756572] [robotarium]: Starting Experiment
+Run05 AntColonyMeds: 11 robots, 195 s, seed 1105
+[t= 51.6s] DOCTOR ESCALATION -> bed 5 (level 0.01)
+[t= 60.0s] levels [0.01 0.95 0.90 0.85 0.90 0.57] deliveries=4 per-nurse=[1, 1, 1, 1] tour-conc=0.40 escalations=1
+[t= 62.5s] DOCTOR ESCALATION -> bed 0 (level 0.00)
+[t= 90.0s] levels [0.83 0.93 0.95 0.92 1.00 0.73] deliveries=10 per-nurse=[3, 2, 3, 2] tour-conc=0.69 escalations=2
+[t=120.0s] levels [0.97 0.57 0.59 0.92 0.64 0.99] deliveries=13 per-nurse=[4, 3, 4, 2] tour-conc=0.71 escalations=2
+[t=150.0s] levels [0.61 0.78 0.68 0.87 0.83 0.63] deliveries=17 per-nurse=[5, 4, 5, 3] tour-conc=0.68 escalations=2
+[t=180.0s] levels [0.74 0.42 0.65 0.96 0.84 0.73] deliveries=22 per-nurse=[7, 5, 5, 5] tour-conc=0.78 escalations=2
+Run05 complete: 24 deliveries [7, 6, 6, 5], 2 escalations, mean beds-awaiting=3.38, tour concentration=0.73 (uniform = 0.40)

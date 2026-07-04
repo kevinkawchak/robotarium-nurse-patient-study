@@ -1,0 +1,26 @@
+/usr/local/lib/python3.10/dist-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] [1781726142.830357872] [robotarium]: Initializing 16 robots to initial conditions...
+[INFO] [1781726334.970780721] [robotarium]: At initial conditions... Starting Experiment
+[INFO] [1781726335.476692507] [robotarium]: Starting Experiment
+Run06 ConsensusVitals: 16 robots, 165 s, seed 1106
+  initial vitals: patients [0.49, 0.54, 0.83, 0.78, 0.74, 0.41, 0.55, 0.25, 0.77], staff 0.8
+[t= 40.0s] ring means [0.49 0.66 0.80] spread=0.306 global disagreement=0.399
+[t= 53.0s] ferry contact #1 (nurse 2 at ring 2); ring means [0.55 0.69 0.80]
+[t= 55.0s] ring means [0.55 0.70 0.79] spread=0.238 global disagreement=0.136
+[t= 55.8s] ferry contact #2 (nurse 0 at ring 0); ring means [0.55 0.70 0.79]
+[t= 62.4s] ferry contact #3 (nurse 2 at ring 0); ring means [0.62 0.70 0.75]
+[t= 67.0s] ferry contact #4 (nurse 1 at ring 1); ring means [0.65 0.70 0.73]
+[t= 67.8s] ferry contact #5 (nurse 3 at ring 0); ring means [0.65 0.70 0.73]
+[t= 70.0s] ring means [0.65 0.70 0.73] spread=0.075 global disagreement=0.040
+[t= 71.5s] ferry contact #6 (nurse 2 at ring 2); ring means [0.65 0.70 0.71]
+[t= 73.6s] ferry contact #7 (nurse 0 at ring 1); ring means [0.65 0.69 0.71]
+[t= 75.5s] ferry contact #8 (nurse 1 at ring 2); ring means [0.66 0.69 0.70]
+Traceback (most recent call last):
+  File "/user_data/main.py", line 472, in <module>
+    r.step()
+  File "/usr/local/lib/python3.10/dist-packages/rps/robotarium.py", line 395, in step
+    self._wait_for_next_step()
+  File "/usr/local/lib/python3.10/dist-packages/rps/robotarium.py", line 555, in _wait_for_next_step
+    time.sleep(STEP_TIMEOUT - (now - self.last_step_time))
+KeyboardInterrupt

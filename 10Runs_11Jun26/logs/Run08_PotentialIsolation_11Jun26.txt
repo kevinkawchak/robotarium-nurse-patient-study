@@ -1,0 +1,24 @@
+/usr/local/lib/python3.10/dist-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] [1781808957.765680739] [robotarium]: Initializing 12 robots to initial conditions...
+[INFO] [1781809076.205246537] [robotarium]: At initial conditions... Starting Experiment
+[INFO] [1781809076.716552185] [robotarium]: Starting Experiment
+Run08 PotentialIsolation: 12 robots, 180 s, seed 1108
+[t= 28.0s] min patient spacing=0.54 m captures=0/6 retargets=0 laps=[0, 0, 1]
+[t= 40.0s] min patient spacing=0.54 m captures=0/6 retargets=0 laps=[1, 1, 1]
+[t= 49.5s] patient 1 captured cell 0 (1/6)
+[t= 52.7s] patient 5 captured cell 3 (2/6)
+[t= 63.6s] patient 3 captured cell 4 (3/6)
+[t= 70.0s] min patient spacing=0.30 m captures=3/6 retargets=13 laps=[2, 2, 3]
+[t= 70.5s] patient 2 captured cell 1 (4/6)
+[t= 79.5s] patient 4 captured cell 2 (5/6)
+[t= 88.7s] patient 0 captured cell 5 (6/6)
+[t=100.0s] min patient spacing=0.40 m captures=6/6 retargets=16 laps=[4, 4, 4]
+[t=128.8s] doctor 0 inspected cell 0
+[t=130.0s] min patient spacing=0.40 m captures=6/6 retargets=16 laps=[6, 5, 6]
+[t=136.1s] doctor 2 skipped blocked stage 0
+[t=138.7s] doctor 0 inspected cell 1
+[t=141.6s] doctor 2 inspected cell 4
+[t=151.6s] doctor 2 inspected cell 3
+[t=160.0s] min patient spacing=0.40 m captures=6/6 retargets=16 laps=[8, 7, 7]
+Run08 complete: 6/6 cells captured [0, 1, 2, 3, 4, 5], 16 retargets, min spacing ever=0.21 m, patrol laps=[8, 7, 8]

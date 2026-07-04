@@ -1,0 +1,28 @@
+/usr/local/lib/python3.10/dist-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] [1783016679.162162223] [robotarium]: Initializing 10 robots to initial conditions...
+[INFO] [1783016713.082442021] [robotarium]: At initial conditions... Starting Experiment
+[INFO] [1783016713.594269907] [robotarium]: Starting Experiment
+Run10 ConvoyDischarge: 10 robots, 210 s, seed 1110
+[t= 16.2s] convoy A hooked (blink sync on)
+[t= 16.2s] convoy C hooked (blink sync on)
+[t= 16.3s] convoy B hooked (blink sync on)
+[t= 40.0s] CONVOY A departs
+[t= 50.3s] marshal sweep complete; doctor at gate
+[t= 55.0s] A: gaps 0.41/0.40 m wpt 3
+[t= 70.0s] A: gaps 0.38/0.41 m wpt 4
+[t= 75.0s] CONVOY B departs
+[t= 85.0s] A: gaps 0.41/0.36 m wpt 6; B: gaps 0.40/0.38 m wpt 1
+[t= 94.7s] convoy A at discharge row; gap1 mean 0.40 max 0.57 m, gap2 mean 0.37 max 0.43 m
+[t=100.0s] B: gaps 0.35/0.32 m wpt 3
+[t=110.0s] CONVOY C departs
+[t=112.4s] convoy A discharged (2/6 patients seated)
+[t=115.0s] B: gaps 0.40/0.36 m wpt 5; C: gaps 0.34/0.31 m wpt 0
+[t=128.5s] convoy B at discharge row; gap1 mean 0.38 max 0.44 m, gap2 mean 0.36 max 0.42 m
+[t=130.0s] C: gaps 0.40/0.38 m wpt 1
+[t=145.0s] C: gaps 0.37/0.32 m wpt 3
+[t=157.7s] convoy B discharged (4/6 patients seated)
+[t=160.0s] C: gaps 0.40/0.37 m wpt 5
+[t=169.3s] convoy C at discharge row; gap1 mean 0.38 max 0.44 m, gap2 mean 0.37 max 0.43 m
+[t=208.4s] convoy C discharged (6/6 patients seated)
+Run10 complete: 6/6 patients discharged, convoy states ['DONE', 'DONE', 'DONE']

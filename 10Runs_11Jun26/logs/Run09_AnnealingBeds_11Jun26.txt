@@ -1,0 +1,13 @@
+/usr/local/lib/python3.10/dist-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] [1783016141.343419978] [robotarium]: Initializing 13 robots to initial conditions...
+[INFO] [1783016197.647416452] [robotarium]: At initial conditions... Starting Experiment
+[INFO] [1783016198.153588269] [robotarium]: Starting Experiment
+Run09 AnnealingBeds: 13 robots, 165 s, seed 1126, initial energy 10.880
+[t= 30.0s] epoch 00 T=1.600: swap P2<->P0 dE=-1.359 -> ACCEPT (E=10.880)
+[t= 65.0s] swap timed out -> committed; movers self-seat
+[t= 69.9s] epoch 01 T=0.960: swap P1<->P0 dE=+0.377 -> ACCEPT (E=9.521)
+[t= 99.0s] swap seated: P1->bed5, P0->bed4 (E=9.898)
+[t=101.9s] epoch 02 T=0.576: swap P4<->P3 dE=-0.305 -> ACCEPT (E=9.898)
+[t=128.2s] swap seated: P4->bed6, P3->bed0 (E=9.592)
+Run09 complete: E 10.880 -> 9.592 (12% better), 3 accepted (1 uphill) / 0 rejected, final assignment [4, 5, 3, 0, 6, 1, 2]

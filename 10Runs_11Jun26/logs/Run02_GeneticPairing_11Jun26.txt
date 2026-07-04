@@ -1,0 +1,23 @@
+/usr/local/lib/python3.10/dist-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] [1781274762.102923993] [robotarium]: Initializing 16 robots to initial conditions...
+[INFO] [1781274892.719358107] [robotarium]: At initial conditions... Starting Experiment
+[INFO] [1781274893.225954671] [robotarium]: Starting Experiment
+Traceback (most recent call last):
+  File "/user_data/main.py", line 490, in <module>
+Run02 GeneticPairing: 16 robots, 180 s, seed 1102
+[t= 27.0s] gen 01: fitness=12.281 global_best=12.281 churn=8
+[t= 39.0s] gen 02: fitness=5.462 global_best=5.462 churn=0
+[t= 51.0s] gen 03: fitness=5.032 global_best=5.032 churn=0
+[t= 63.0s] gen 04: fitness=4.564 global_best=4.564 churn=5
+[t= 75.0s] gen 05: fitness=3.654 global_best=3.654 churn=5
+[t= 87.1s] gen 06: fitness=4.229 global_best=3.654 churn=2
+[t= 99.1s] gen 07: fitness=3.395 global_best=3.395 churn=3
+[t=111.1s] gen 08: fitness=3.982 global_best=3.395 churn=0
+[t=123.1s] gen 09: fitness=4.375 global_best=3.395 churn=0
+    r.step()
+  File "/usr/local/lib/python3.10/dist-packages/rps/robotarium.py", line 395, in step
+    self._wait_for_next_step()
+  File "/usr/local/lib/python3.10/dist-packages/rps/robotarium.py", line 555, in _wait_for_next_step
+    time.sleep(STEP_TIMEOUT - (now - self.last_step_time))
+KeyboardInterrupt

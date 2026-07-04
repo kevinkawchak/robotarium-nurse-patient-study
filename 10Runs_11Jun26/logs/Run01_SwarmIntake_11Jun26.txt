@@ -1,0 +1,14 @@
+/usr/local/lib/python3.10/dist-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] [1781274243.170131818] [robotarium]: Initializing 14 robots to initial conditions...
+[INFO] [1781274291.924520932] [robotarium]: At initial conditions... Starting Experiment
+[INFO] [1781274292.430401875] [robotarium]: Starting Experiment
+Run01 SwarmIntake: 14 robots, 150 s, seed 1101
+[t= 30.0s] flock polarization=0.19 mean-NN=0.25 m
+[t= 45.0s] flock polarization=0.22 mean-NN=0.23 m
+[t= 60.0s] flock polarization=0.49 mean-NN=0.23 m
+[t= 75.0s] flock polarization=0.34 mean-NN=0.22 m
+[t= 90.0s] docking starts: bay split upper/lower = [4, 4]
+[t= 90.0s] flock polarization=0.98 mean-NN=0.22 m
+Collision Detected! 
+ Stopping experiment!

@@ -1,0 +1,15 @@
+/usr/local/lib/python3.10/dist-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] [1781285384.217409782] [robotarium]: Initializing 16 robots to initial conditions...
+[INFO] [1781285486.573407705] [robotarium]: At initial conditions... Starting Experiment
+[INFO] [1781285487.078745407] [robotarium]: Starting Experiment
+Run03 DifferentialWard: 16 robots, 210 s, seed 1103
+[t= 30.0s] DE gen 01: cost=2.895 station drift=1.035 m
+[t= 43.4s] DE gen 10: cost=2.240 station drift=0.771 m
+[t= 58.2s] DE gen 20: cost=1.711 station drift=0.030 m
+[t= 73.1s] DE gen 30: cost=1.630 station drift=0.013 m
+[t= 87.9s] DE gen 40: cost=1.630 station drift=0.000 m
+[t=102.8s] DE gen 50: cost=1.630 station drift=0.000 m
+[t=117.6s] DE gen 60: cost=1.630 station drift=0.000 m
+[t=120.0s] layout locked; cluster->station map [1, 2, 3, 0]
+Run03 complete: 61 DE generations, locked layout serves patients at mean home distance 0.218 m

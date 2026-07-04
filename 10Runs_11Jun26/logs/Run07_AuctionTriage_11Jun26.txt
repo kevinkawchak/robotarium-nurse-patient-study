@@ -1,0 +1,13 @@
+/usr/local/lib/python3.10/dist-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] [1781808320.195903802] [robotarium]: Initializing 16 robots to initial conditions...
+[INFO] [1781808435.948283312] [robotarium]: At initial conditions... Starting Experiment
+[INFO] [1781808436.460019926] [robotarium]: Starting Experiment
+Run07 AuctionTriage: 16 robots, 240 s, seed 1107
+[t= 30.0s] WAVE 1 arrivals: P0(a3), P3(a2), P5(a1)
+[t= 31.9s] AUCTION: nurse 0 wins patient 0 (acuity 3, bid -0.30, waited 1.9s)
+[t= 31.9s] AUCTION: nurse 2 wins patient 3 (acuity 2, bid -0.03, waited 1.9s)
+[t= 31.9s] AUCTION: nurse 3 wins patient 5 (acuity 1, bid 1.08, waited 1.9s)
+[t= 64.8s] patient 3 treated at station 0 -> recovery slot 0 (1/9)
+Collision Detected! 
+ Stopping experiment!
