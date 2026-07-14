@@ -6,7 +6,7 @@
 - Robotarium robot videos on [Google Drive](https://drive.google.com/drive/folders/1P-EzQ3nvinoVeQIuEi423PWnwb0GWuL1)
  - Robotarium is accessible through the following [Website](https://www.robotarium.gatech.edu/experiment/6a2b275ff81769c54336dbd7)
 
-### Fable 5 Prompt
+### Prompt: Fable 5
 "Your goal is to generate 10 new and comprehensive Python scripts based on the Georgia Tech Robotarium simulator’s guidelines in kevinkawchak/fork_robotarium_python_simulator. Make sure to follow all rules set by the Robotarium. Each script should consist of robots acting as unique numbers of doctors, nurses, and patients (example: 4 doctors, 4 nurses, 8 patient robots) - trackable by unique and coherent LED light configurations per robot type that update throughout the real run. You always have permission to commit to main. Do not hold commits - every new commit should be viewable live as it is generated. Verify your work twice using the provided Python simulator. Deposit all files into kevinkawchak/robotarium-nurse-patient-study/10Runs_11Jun26
 
 Each script should be 2-5 minutes in real life, have 10-16 robots, consist of different clinical trial objectives, utilize different types of algorithm patterns such as swarm, genetic algorithms, differential evolution, etc. Account for a 15 second time delay for the real robots to start their real world tasks for each script. The real robots likely travel 30% slower than the 20cm/s max speed linearly and 50% slower than the 3.6 rad/s max rotational speed. Set the robot arena color to white. 
