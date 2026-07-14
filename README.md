@@ -143,7 +143,7 @@ This repository includes a built-in Robotarium-compatible simulator with full AP
              +────────────────────────+                   +─────────────────────────────+
              | Local Python (headless)|                   | GitHub Pages Web Sim v3.1   |
              | python Exp_01a_12Feb26 |                   | Pyodide + Canvas + Upload   |
-             | python main.py         |                   | Experiment selector dropdown |
+             | python main.py         |                   | Experiment selector dropdown|
              +────────────────────────+                   | Heading wedges, trails,     |
                                                           | phase timeline, speed ctrl  |
                                                           +─────────────────────────────+
