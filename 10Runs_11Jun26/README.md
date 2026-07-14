@@ -5,4 +5,4 @@
 - Robotarium run log files: ./logs.
 - Robotarium robot videos on [Google Drive](https://drive.google.com/drive/folders/1P-EzQ3nvinoVeQIuEi423PWnwb0GWuL1)
  - Robotarium is accessible through the following [Website](https://www.robotarium.gatech.edu/experiment/6a2b275ff81769c54336dbd7)
- - Anthropic Claude Code Fable 5 prompt.md
+ - Anthropic Claude Code Fable 5 [prompt.md](https://github.com/kevinkawchak/robotarium-nurse-patient-study/blob/master/10Runs_11Jun26/prompt.md)
