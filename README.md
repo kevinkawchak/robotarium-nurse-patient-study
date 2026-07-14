@@ -46,21 +46,21 @@ Ten new standalone Robotarium experiments in [`10Runs_11Jun26/`](10Runs_11Jun26/
 ```text
 +--------------------------------------------------------------------------+
 | Run01..Run10 (standalone Robotarium scripts, 10-16 robots each)          |
-|   timeline: 15 s STANDBY (LED system check + role announce)             |
-|             -> algorithm phases (swarm / GA / DE / PSO / ACO /          |
-|                consensus / auction / fields / annealing / convoys)      |
-|             -> hold + LED completion display                            |
+|   timeline: 15 s STANDBY (LED system check + role announce)              |
+|             -> algorithm phases (swarm / GA / DE / PSO / ACO /           |
+|                consensus / auction / fields / annealing / convoys)       |
+|             -> hold + LED completion display                             |
 +-------------------------------+------------------------------------------+
                                 |
                                 v
 +--------------------------------------------------------------------------+
 | Shared compliance core (embedded in every script)                        |
-|   rps API resolver (server short-form <-> repo-stub long-form names)    |
-|   SI barrier certificates w/ boundary  | zero-velocity spin guard       |
-|   derated caps 0.14 m/s / 1.8 rad/s    | wheel-speed budget rescaling   |
-|   LED shim (set_left/right_leds or fork LED array, 0-255 RGB)           |
+|   rps API resolver (server short-form <-> repo-stub long-form names)     |
+|   SI barrier certificates w/ boundary  | zero-velocity spin guard        |
+|   derated caps 0.14 m/s / 1.8 rad/s    | wheel-speed budget rescaling    |
+|   LED shim (set_left/right_leds or fork LED array, 0-255 RGB)            |
 |   white arena/figure background        | start spacing >= 0.36 m asserts |
-|   call_at_scripts_end() + debug() end hooks                             |
+|   call_at_scripts_end() + debug() end hooks                              |
 +-------------------------------+------------------------------------------+
                                 |
             +-------------------+-------------------+
