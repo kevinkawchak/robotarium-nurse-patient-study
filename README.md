@@ -1,6 +1,6 @@
 # Robotarium Nurse Patient Experiment
 
-[**Run the AI Generated Web Simulator**](https://kevinkawchak.github.io/robotarium-nurse-patient-study/) - select 2-robot or 14-robot experiment, press Play (no install required)
+[**Run the AI Generated Web Simulator**](https://kevinkawchak.github.io/robotarium-nurse-patient-study/) - select 2-robot or 14-robot Python experiment, press Play (no install required)
 
 Robot Instructions, Roles, and Estimated Run Times for 10 Separate Robotarium Experiments: [10Runs_11Jun26](../master/10Runs_11Jun26)
 
